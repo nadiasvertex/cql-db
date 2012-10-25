@@ -1,0 +1,17 @@
+syntax: glob
+
+*.o
+*.lo
+*.so
+*.so.*
+*.Po
+*.Plo
+*.a
+*.la
+*.lai
+*.pyc
+*.*~
+toolchain/tools/*
+
+.sconsign.dblite
+lattice_test

@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -f dpeg_test
+rm -f lattice_test
 scons
-./dpeg_test
+./lattice_test
 
