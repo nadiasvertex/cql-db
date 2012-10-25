@@ -9,9 +9,11 @@ cd ..
 
 # Build 0MQ
 cd zeromq-3.2.1
-./configure --prefix=$BINDIR
+./configure --prefix=$BINDIR --with-pgm
 make && make install
 cd ..
+
+cp -f zmqcpp/zmq.hpp $BINDIR/include
 
 # Cleanup
 hg clean -X toolchain/tools/*
