@@ -1,0 +1,16 @@
+import "edge/proto/address.proto";
+
+package lattice.edge;
+
+message PacketAck {
+	required bool delivered      = 1;
+	
+	enum FailureType {
+	     BUSY            = 0;
+	     UNKNOWN_CELL    = 1;
+	     UNKNOWN_GROUP   = 2;
+	     UNKNOWN_LATTICE = 3;	     
+	}
+	
+	optional FailureType fail_code = 2;
+}

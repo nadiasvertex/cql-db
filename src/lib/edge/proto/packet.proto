@@ -1,0 +1,17 @@
+import "edge/proto/address.proto";
+
+package lattice.edge;
+
+message Packet {
+	required Address src=1;
+	repeated Address dst=2;
+	
+	enum PayloadType {
+	     PING  = 0;
+	     LOAD  = 1;
+             STORE = 2;
+	     DDL   = 3;
+	}
+	required PayloadType type    = 3;
+	required bytes       payload = 4;
+}
