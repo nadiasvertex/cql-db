@@ -1,0 +1,10 @@
+package edge;
+
+message Address {
+	required uint32 cell    = 1;
+        optional uint32 group   = 2 [default=0];
+	optional uint32 lattice = 3 [default=0];	
+}
+
+
+

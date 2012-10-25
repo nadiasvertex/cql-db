@@ -12,6 +12,7 @@ syntax: glob
 *.pyc
 *.*~
 toolchain/tools/*
-
+build/*
+python/*
 .sconsign.dblite
 lattice_test

@@ -32,7 +32,7 @@ def auto_compile(path, extension, cmd):
 if __name__ == '__main__':
     
     path = os.getcwd()    
-    extension = ".cpp,.h"    
+    extension = ".cpp,.h,.proto"    
     cmd = '/bin/sh test.sh'
     
     # Blocks monitoring
