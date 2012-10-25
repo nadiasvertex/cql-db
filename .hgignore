@@ -16,3 +16,4 @@ build/*
 python/*
 .sconsign.dblite
 lattice_test
+#*#

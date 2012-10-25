@@ -9,7 +9,7 @@ cd ..
 
 # Build 0MQ
 cd zeromq-3.2.1
-./configure --prefix=$BINDIR --with-pgm
+./configure --prefix=$BINDIR --with-pgm --disable-shared --enable-static
 make && make install
 cd ..
 

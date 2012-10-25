@@ -1,4 +1,4 @@
-package edge;
+package lattice.edge;
 
 message Address {
 	required uint32 cell    = 1;

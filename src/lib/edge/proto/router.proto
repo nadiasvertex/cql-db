@@ -2,7 +2,7 @@ import "edge/proto/packet.proto";
 import "edge/proto/packet_ack.proto";
 
 
-package edge;
+package lattice.edge;
 
 service Router {
 

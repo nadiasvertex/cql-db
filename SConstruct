@@ -33,7 +33,9 @@ edge_proto = env.Protoc(
 	   PROTOCOUTDIR="build"
 )	   
 
+
 env.Library("edge", glob("build/edge/proto/*.cc"))
+env.Library("plane", glob("src/lib/plane/*.cpp"))
 
 env.Program("lattice_test", ["tests/gtest/gtest-all.cc",
                              "tests/gtest/gtest_main.cc"] + glob("tests/*.cpp"))

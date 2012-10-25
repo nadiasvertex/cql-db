@@ -31,9 +31,13 @@ def auto_compile(path, extension, cmd):
 
 if __name__ == '__main__':
     
+    
     path = os.path.join(os.getcwd(), "src")
     extension = ".cpp,.h,.proto"    
-    cmd = '/bin/sh test.sh'
+    cmd = '/bin/sh ' +\
+           os.path.abspath(
+             os.path.join(os.getcwd(), 'test.sh')
+           )
     
     # Blocks monitoring
     auto_compile(path, extension, cmd)
