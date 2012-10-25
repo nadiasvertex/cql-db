@@ -8,7 +8,7 @@ path = ":".join([os.environ['PATH'],
                  "/store/workspace/build/Release+Asserts/bin",
                  os.path.join(toolchain_path, "bin")])
 
-print path
+libs = ['zmq', 'protobuf', 'pthread', 'rt']
 
 env = Environment(
     ENV = {
@@ -21,9 +21,8 @@ env = Environment(
 env.Replace(CC = "clang")
 env.Replace(CXX = "clang++")
 
-env.Append(CXXFLAGS = "-std=c++11")
-env.Append(LIBS = ['zmq', 'protobuf', 'pthread'])
-env.Append(LIBPATH=os.path.join(toolchain_path, "lib"))
+env.Append(CXXFLAGS = "-std=c++11 -g")
+env.Append(LIBPATH=['.', os.path.join(toolchain_path, "lib")])
 env['ENV']['TERM'] = os.environ['TERM']
 
 edge_proto = env.Protoc(
@@ -34,8 +33,13 @@ edge_proto = env.Protoc(
 )	   
 
 
-env.Library("edge", glob("build/edge/proto/*.cc"))
-env.Library("plane", glob("src/lib/plane/*.cpp"))
+env.Library("edge", glob("build/edge/proto/*.cc") +\
+                    glob("src/lib/edge/cpp/*.cpp"))
 
-env.Program("lattice_test", ["tests/gtest/gtest-all.cc",
-                             "tests/gtest/gtest_main.cc"] + glob("tests/*.cpp"))
+env.Library("plane", glob("src/lib/plane/cpp/*.cpp"))
+
+env.Program( "lattice_test", 
+            ["tests/gtest/gtest-all.cc",
+             "tests/gtest/gtest_main.cc"] + glob("tests/*.cpp"),
+	    LIBS=['plane', 'edge'] + libs
+)

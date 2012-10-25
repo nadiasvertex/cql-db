@@ -9,14 +9,16 @@
 #ifndef __LATTICE_CONTROL_PLANE_H__
 #define __LATTICE_CONTROL_PLANE_H__
 
+#include <memory>
 #include <string>
+#include <sstream>
+
 #include <zmq.hpp>
 
-#include <edge/proto/address.pb.h>
-
+#include <edge/proto/packet.pb.h>
 
 namespace lattice {
-  namepace plane {
+  namespace plane {
     class control {
       zmq::socket_t publisher;
 
@@ -29,10 +31,35 @@ namespace lattice {
 
 	publisher.bind("inproc://control");
 	publisher.bind("ipc://lattice-control-plane");
-	publisher.bind(pgm_address);
+	//publisher.bind(pgm_address.c_str());
 	
       }
+
+     void shutdown() {
+    	 publisher.close();
+     }
+
+     void send(lattice::edge::Packet packet) {
+    	 std::ostringstream out;
+    	 packet.SerializeToOstream(&out);
+
+    	 auto data = out.str();
+    	 publisher.send(data.c_str(), data.size());
+     }
+
     };
+
+    typedef std::unique_ptr<control> control_t;
+
+    /// Initialize the control plane.
+    bool initialize_control(zmq::context_t& ctx);
+
+    /// Shutdown the control plane.
+    bool shutdown_control();
+
+    /// Get access to the control plane.
+    control_t& get_control();
+
   } // end namespace plane
 } // end namespace control
 

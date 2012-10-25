@@ -1,9 +1,26 @@
 #include <memory>
-#include <plane/control.h>
+#include <plane/cpp/control.h>
 
-static std::unique_ptr<lattice::plane::control> _control_plane_singleton;
+namespace lattice {
+namespace plane {
 
-bool initialize_control_plane(zmq::context_t& ctx) {
-  _control_plane_singleton = new lattice::plane::control(ctx, 9999);
+static control_t _control_plane_singleton;
+
+bool initialize_control(zmq::context_t& ctx) {
+	_control_plane_singleton = control_t(
+			new lattice::plane::control(ctx, 9999));
+	return true;
+}
+
+bool shutdown_control() {
+	_control_plane_singleton->shutdown();
+	return true;
+}
+
+control_t& get_control() {
+	return _control_plane_singleton;
+}
+
+}
 }
 
