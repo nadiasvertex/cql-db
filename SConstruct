@@ -22,7 +22,7 @@ env.Replace(CC = "clang")
 env.Replace(CXX = "clang++")
 
 env.Append(CXXFLAGS = "-std=c++11")
-env.Append(LIBS = 'pthread')
+env.Append(LIBS = ['zmq', 'protobuf', 'pthread'])
 env.Append(LIBPATH=os.path.join(toolchain_path, "lib"))
 env['ENV']['TERM'] = os.environ['TERM']
 

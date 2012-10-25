@@ -1,39 +1,12 @@
-import "edge/proto/address.proto";
+import "edge/proto/packet.proto";
+import "edge/proto/packet_ack.proto";
 
 
 package edge;
 
-message Packet {
-	required Address src=1;
-	repeated Address dst=2;
-	
-	enum PayloadType {
-	     PING  = 0;
-	     LOAD  = 1;
-             STORE = 2;
-	     DDL   = 3;
-	}
-	required PayloadType type    = 3;
-	required bytes       payload = 4;
-}
-
-message PacketAck {
-	required bool delivered      = 1;
-	
-	enum FailureType {
-	     BUSY            = 0;
-	     UNKNOWN_CELL    = 1;
-	     UNKNOWN_GROUP   = 2;
-	     UNKNOWN_LATTICE = 3;	     
-	}
-	
-	optional FailureType fail_code = 2;
-}
-
 service Router {
 
-	rpc multicast (Packet) returns (PacketAck);
-	rpc broadcast (Packet) returns (PacketAck);
-	rpc unicast   (Packet) returns (PacketAck);
+	rpc send (Packet) returns (PacketAck);
+	rpc recv (PacketAck) returns (Packet);
 
 }

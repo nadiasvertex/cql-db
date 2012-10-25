@@ -31,7 +31,7 @@ def auto_compile(path, extension, cmd):
 
 if __name__ == '__main__':
     
-    path = os.getcwd()    
+    path = os.path.join(os.getcwd(), "src")
     extension = ".cpp,.h,.proto"    
     cmd = '/bin/sh test.sh'
     
