@@ -80,15 +80,17 @@ public:
      * @param row_id: The row id to look for.
      */
     void delete_row(row_id_type row_id) {
+        bool result;
+        atom_type* atom;
+        index_map_type::iterator pos;
+
         auto el = find_row(row_id);
+        std::tie(result, atom, pos) = el;
 
         // If it was not found, return.
-        if (!std::get<0>(el)) {
+        if (!result) {
             return;
         }
-
-        auto atom = std::get<1>(el);
-        auto pos = std::get<2>(el);
 
         // Perform the deletion.
         atom->index.erase(pos);
@@ -158,36 +160,33 @@ public:
      * @note: This should only be used with basic data types.
      */
     template<typename T>
-    std::tuple<bool, size_type> fetch_row(row_id_type row_id, const T& data) {
-        atom_type* atom { nullptr };
+    std::tuple<bool, size_type> fetch_row(row_id_type row_id, T& data) {
 
         // If the atom is empty, we cannot read it.
         if (atoms.size()==0) {
             return std::make_tuple(false, 0);
         }
 
-        atom = atoms.back().get();
+        bool result;
+        atom_type* atom;
+        index_map_type::iterator pos;
 
-        // Make sure we seek to the end of the stream.
-        atom->data.seekp(0,std::ios::end);
+        auto el = find_row(row_id);
+        std::tie(result, atom, pos) = el;
 
-        // Find out where that is.
-        auto pos = atom->data.tellp();
+        if (!result) {
+            return std::make_tuple(false, 0);
+        }
 
-        // Write the data.
-        atom->data << data;
-        atom->size += sizeof(data);
+        // Seek to the proper position
+        atom->data.seekg(pos->second);
 
-        // Update the index.
-        atom->index[row_id] = pos;
+        // Read the data.
+        atom->data >> data;
 
-        return sizeof(data);
+        // Return success.
+        return std::make_tuple(true, sizeof(data));
     }
-
-
-
-
-
 
 
 };
