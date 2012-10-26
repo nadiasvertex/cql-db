@@ -46,9 +46,8 @@ public:
 
         atom() :
                 size(0), data(
-                        atom_data_type::in
-                        | atom_data_type::out
-                        | atom_data_type::binary)
+                        atom_data_type::in | atom_data_type::out
+                                | atom_data_type::binary)
         {
         }
         ;
@@ -71,15 +70,69 @@ private:
     {
         for (auto i = 0; i < atoms.size(); ++i)
             {
-            auto &index = atoms[i]->index;
-            auto pos = index.find(row_id);
-            if (pos != index.end())
-                {
-                return std::make_tuple(true, atoms[i].get(), pos);
-                }
+                auto &index = atoms[i]->index;
+                auto pos = index.find(row_id);
+                if (pos != index.end())
+                    {
+                        return std::make_tuple(true, atoms[i].get(), pos);
+                    }
             }
 
         return std::make_tuple(false, nullptr, atoms.back()->index.end());
+    }
+
+    /**
+     * Retrieves the last atom in the atoms list, inserting a new
+     * atom if the list is empty.
+     */
+    atom_type* get_last_atom()
+    {
+        // If the atom is full, create a new one.
+        if (atoms.size() == 0 || atoms.back()->size > max_atom_size)
+            {
+                atoms.push_back(atom_handle_type(new atom_type()));
+            }
+
+        return atoms.back().get();
+
+    }
+
+    /**
+     * Writes a data element into a specific atom.
+     *
+     * Specialized for std::string.
+     *
+     * @param atom: The atom to write into.
+     * @param data: The data to write.
+     *
+     */
+    template<typename T>
+    void _insert_row(atom_type*atom, const T& data)
+    {
+        // Write the data.
+        atom->data.write(
+               static_cast<const char*>(
+                  static_cast<const void*>(&data)
+                ), sizeof(data)
+        );
+
+        atom->size += sizeof(data);
+    }
+
+    /**
+     * Writes a data element into a specific atom.
+     *
+     * Specialized for std::string.
+     *
+     * @param atom: The atom to write into.
+     * @param data: The data to write.
+     *
+     */
+    void _insert_row(atom_type*atom, const std::string& data)
+    {
+        // Write the data.
+        atom->data.write(data.c_str(), data.size());
+        atom->size += data.size();
     }
 
 public:
@@ -107,7 +160,7 @@ public:
         // If it was not found, return.
         if (!result)
             {
-            return;
+                return;
             }
 
         // Perform the deletion.
@@ -125,7 +178,7 @@ public:
     {
         for (auto row : rows)
             {
-            delete_row(row);
+                delete_row(row);
             }
     }
 
@@ -144,18 +197,7 @@ public:
     template<typename T>
     size_type insert_row(row_id_type row_id, const T& data)
     {
-        atom_type* atom
-            {
-            nullptr
-            };
-
-        // If the atom is full, create a new one.
-        if (atoms.size() == 0 || atoms.back()->size > max_atom_size)
-            {
-            atoms.push_back(atom_handle_type(new atom_type()));
-            }
-
-        atom = atoms.back().get();
+        auto atom = get_last_atom();
 
         // Make sure we seek to the end of the stream.
         atom->data.seekp(0, std::ios::end);
@@ -163,12 +205,8 @@ public:
         // Find out where that is.
         auto pos = atom->data.tellp();
 
-        // Write the data.
-        atom->data.write(static_cast<const char*>(
-                           static_cast<const void*>(&data)
-                         ), sizeof(data)
-        );
-        atom->size += sizeof(data);
+        // Hand off the write.
+        _insert_row(atom, data);
 
         // Update the index.
         atom->index[row_id] = pos;
@@ -193,7 +231,7 @@ public:
         // If the atom is empty, we cannot read it.
         if (atoms.size() == 0)
             {
-            return std::make_tuple(false, 0);
+                return std::make_tuple(false, 0);
             }
 
         bool result;
@@ -205,17 +243,15 @@ public:
 
         if (!result)
             {
-            return std::make_tuple(false, 0);
+                return std::make_tuple(false, 0);
             }
 
         // Seek to the proper position
         atom->data.seekg(pos->second);
 
         // Read the data.
-        atom->data.read(static_cast<char*>(
-                         static_cast<void*>(&data)
-                        ), sizeof(data)
-        );
+        atom->data.read(static_cast<char*>(static_cast<void*>(&data)),
+                sizeof(data));
 
         // Return success.
         return std::make_tuple(true, sizeof(data));
