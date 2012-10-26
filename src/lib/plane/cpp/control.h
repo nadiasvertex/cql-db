@@ -17,51 +17,86 @@
 
 #include <edge/proto/packet.pb.h>
 
-namespace lattice {
-  namespace plane {
-    class control {
-      zmq::socket_t publisher;
+namespace lattice
+{
+namespace plane
+{
 
-    public:
-    control(zmq::context_t &ctx, int port):publisher(ctx, ZMQ_PUB) {
+class control;
+typedef std::unique_ptr<control> control_t;
 
-	std::string pgm_address = 
-	  std::string("pgm://*:") +
-	  std::to_string(port);
+class control
+{
+    zmq::socket_t publisher;
 
-	publisher.bind("inproc://control");
-	publisher.bind("ipc://lattice-control-plane");
-	//publisher.bind(pgm_address.c_str());
-	
-      }
+    /** Initialize the control plane
+     *
+     * @param ctx: The zmq context.
+     * @param port: The port to broadcast on for pgm and epgm broadcasts.
+     *
+     * Initializes and binds to all sockets.
+     */
+    control(zmq::context_t &ctx, int port) :
+            publisher(ctx, ZMQ_PUB)
+    {
 
-     void shutdown() {
-    	 publisher.close();
-     }
+        std::string pgm_address = std::string("epgm://*:")
+                + std::to_string(port);
 
-     void send(lattice::edge::Packet packet) {
-    	 std::ostringstream out;
-    	 packet.SerializeToOstream(&out);
+        publisher.bind("inproc://control");
+        publisher.bind("ipc://lattice-control-plane");
+        //publisher.bind(pgm_address.c_str());
 
-    	 auto data = out.str();
-    	 publisher.send(data.c_str(), data.size());
-     }
+    }
 
-    };
+    /** Shutdown the control plane.
+     *
+     * Close all control plane bindings. After this call
+     * you can no longer send messages using the control plane.
+     */
+    void _shutdown()
+    {
+        publisher.close();
+    }
 
-    typedef std::unique_ptr<control> control_t;
+public:
 
-    /// Initialize the control plane.
-    bool initialize_control(zmq::context_t& ctx);
+    /** Send a message on the control plane.
+     *
+     * @param packet: The packet to broadcast on the control plane.
+     */
+    void send(lattice::edge::Packet packet)
+    {
+        std::ostringstream out;
+        packet.SerializeToOstream(&out);
 
-    /// Shutdown the control plane.
-    bool shutdown_control();
+        auto data = out.str();
+        publisher.send(data.c_str(), data.size());
+    }
 
-    /// Get access to the control plane.
-    control_t& get_control();
+    /** Initialize the control plane.
+     *
+     * @param ctx: The zmq context.
+     *
+     * Creates a new control plane singleton for this group. Once
+     * initialized, the control plane can be fetched using get().
+     */
+    static bool initialize(zmq::context_t& ctx);
 
-  } // end namespace plane
+    /** Shutdown the active control plane.
+     */
+    static bool shutdown();
+
+    /** Get access to the active control plane.
+     *
+     * Provides a handle to the active control plane. This handle must not
+     * be stored in any way.
+     */
+    static control_t& get();
+
+};
+
+} // end namespace plane
 } // end namespace control
-
 
 #endif //__LATTICE_CONTROL_PLANE_H__

@@ -9,19 +9,19 @@
 class control_guard {
 public:
 	control_guard(zmq::context_t &ctx) {
-		lattice::plane::initialize_control(ctx);
+		lattice::plane::control::initialize(ctx);
 	}
 
 	~control_guard() {
-		lattice::plane::shutdown_control();
+		lattice::plane::control::shutdown();
 	}
 };
 
 TEST(ControlPlaneTest, CanInitialize) {
   zmq::context_t ctx(1);
 
-  ASSERT_NO_THROW(lattice::plane::initialize_control(ctx));
-  ASSERT_NO_THROW(lattice::plane::shutdown_control());
+  ASSERT_NO_THROW(lattice::plane::control::initialize(ctx));
+  ASSERT_NO_THROW(lattice::plane::control::shutdown());
 }
 
 TEST(ControlPlaneTest, CanConnect) {
@@ -48,7 +48,7 @@ TEST(ControlPlaneTest, CanBroadcast) {
 
   sub.connect("inproc://control");
 
-  ASSERT_NO_THROW(lattice::plane::get_control()->send(p1));
+  ASSERT_NO_THROW(lattice::plane::control::get()->send(p1));
 }
 
 TEST(ControlPlaneTest, CanReceiveBroadcast) {
@@ -68,7 +68,7 @@ TEST(ControlPlaneTest, CanReceiveBroadcast) {
 
   ::sleep(0);
 
-  lattice::plane::get_control()->send(p1);
+  lattice::plane::control::get()->send(p1);
 
   ::sleep(0);
 
@@ -79,4 +79,8 @@ TEST(ControlPlaneTest, CanReceiveBroadcast) {
   std::istringstream in(data);
 
   ASSERT_NO_THROW(p2.ParseFromIstream(&in));
+
+  EXPECT_EQ(p2.src().cell(), p1.src().cell());
+  EXPECT_EQ(p2.dst_size(), p1.dst_size());
+  EXPECT_EQ(p2.dst(0).cell(), p1.dst(0).cell());
 }

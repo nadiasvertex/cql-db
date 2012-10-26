@@ -11,17 +11,17 @@ path = ":".join([os.environ['PATH'],
 libs = ['zmq', 'protobuf', 'pthread', 'rt']
 
 env = Environment(
-    ENV = {
+    ENV={
     	'PATH'    : path,
     },
     CPPPATH=['toolchain/tools/include', 'src/lib', 'build', 'tests', '.'],
     tools=['default', 'protoc']
 )
 
-env.Replace(CC = "clang")
-env.Replace(CXX = "clang++")
+env.Replace(CC="clang")
+env.Replace(CXX="clang++")
 
-env.Append(CXXFLAGS = "-std=c++11 -g")
+env.Append(CXXFLAGS="-std=c++11 -g")
 env.Append(LIBPATH=['.', os.path.join(toolchain_path, "lib")])
 env['ENV']['TERM'] = os.environ['TERM']
 
@@ -30,15 +30,20 @@ edge_proto = env.Protoc(
 	   glob("src/lib/edge/proto/*.proto"),
 	   PROTOCPROTOPATH=["src/lib"],
 	   PROTOCOUTDIR="build"
-)	   
+)
 
 
-env.Library("edge", glob("build/edge/proto/*.cc") +\
+env.Library("edge", glob("build/edge/proto/*.cc") + \
                     glob("src/lib/edge/cpp/*.cpp"))
 
 env.Library("plane", glob("src/lib/plane/cpp/*.cpp"))
 
-env.Program( "lattice_test", 
+env.Program("group",
+            glob("src/group/*.cpp"),
+       LIBS=['plane', 'edge'] + libs
+)
+
+env.Program("lattice_test",
             ["tests/gtest/gtest-all.cc",
              "tests/gtest/gtest_main.cc"] + glob("tests/*.cpp"),
 	    LIBS=['plane', 'edge'] + libs
