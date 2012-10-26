@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <memory>
 #include <sstream>
 
@@ -22,6 +23,15 @@ TEST(PageTest, CanWrite)
     EXPECT_EQ(sizeof(a), page.insert_row(0, a));
 }
 
+TEST(PageTest, CanWriteString)
+{
+    lattice::cell::page page;
+
+    std::string s("This is a test string.");
+
+    EXPECT_EQ(s.size() + sizeof(std::uint32_t), page.insert_row(0, s));
+}
+
 TEST(PageTest, CanRead)
 {
     lattice::cell::page page;
@@ -32,6 +42,21 @@ TEST(PageTest, CanRead)
     EXPECT_TRUE(std::get<0>(page.fetch_row(0, b)));
     EXPECT_EQ(a, b);
 }
+
+TEST(PageTest, CanReadString)
+{
+    lattice::cell::page page;
+
+    std::string s("This is a test string.");
+
+    EXPECT_EQ(s.size() + sizeof(std::uint32_t), page.insert_row(0, s));
+
+    std::string n;
+
+    EXPECT_TRUE(std::get<0>(page.fetch_row(0,n)));
+    EXPECT_EQ(s, n);
+}
+
 
 TEST(PageTest, CanWriteMany)
 {

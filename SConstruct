@@ -38,13 +38,15 @@ env.Library("edge", glob("build/edge/proto/*.cc") + \
 
 env.Library("plane", glob("src/lib/plane/cpp/*.cpp"))
 
+env.Library("cell", glob("src/lib/cell/cpp/*.cpp"))
+
 env.Program("group",
             glob("src/group/*.cpp"),
-       LIBS=['plane', 'edge'] + libs
+       LIBS=['plane', 'edge', 'cell'] + libs
 )
 
 env.Program("lattice_test",
             ["tests/gtest/gtest-all.cc",
              "tests/gtest/gtest_main.cc"] + glob("tests/*.cpp"),
-	    LIBS=['plane', 'edge'] + libs
+	    LIBS=['plane', 'edge', 'cell'] + libs
 )
