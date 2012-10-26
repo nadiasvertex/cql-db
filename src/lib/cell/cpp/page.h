@@ -56,16 +56,16 @@ private:
     unsigned long max_atom_size;
 
     std::tuple<bool, atom_type*, index_map_type::iterator>
-    find_row(row_id) {
+    find_row(row_id_type row_id) {
         for(auto i=0; i<atoms.size(); ++i) {
             auto &index = atoms[i]->index;
             auto pos = index.find(row_id);
             if (pos!=index.end()) {
-                return make_tuple(true, atoms[i].get(), pos);
+                return std::make_tuple(true, atoms[i].get(), pos);
             }
         }
 
-        return make_tuple(false, nullptr, atoms.back()->index.end());
+        return std::make_tuple(false, nullptr, atoms.back()->index.end());
     }
 
 public:
@@ -83,12 +83,12 @@ public:
         auto el = find_row(row_id);
 
         // If it was not found, return.
-        if (!get<0>(el)) {
+        if (!std::get<0>(el)) {
             return;
         }
 
-        auto atom = get<1>(el);
-        auto pos = get<2>(el);
+        auto atom = std::get<1>(el);
+        auto pos = std::get<2>(el);
 
         // Perform the deletion.
         atom->index.erase(pos);
@@ -163,7 +163,7 @@ public:
 
         // If the atom is empty, we cannot read it.
         if (atoms.size()==0) {
-            return make_tuple(false, 0);
+            return std::make_tuple(false, 0);
         }
 
         atom = atoms.back().get();
