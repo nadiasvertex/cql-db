@@ -23,7 +23,7 @@ public:
 
 int main(int argc, char*argv[]) {
 
-    // Initialize zero mq.
+    // Initialize 0mq.
     zmq::context_t ctx(1);
 
     // Initialize control plane for local group.

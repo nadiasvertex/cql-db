@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
+#include <thread>
 
 #include <zmq.hpp>
 
@@ -28,6 +29,9 @@ typedef std::unique_ptr<control> control_t;
 class control
 {
     zmq::socket_t publisher;
+    zmq::socket_t response;
+
+    std::unique_ptr<std::thread> fwd_thread;
 
     /** Initialize the control plane
      *
@@ -37,15 +41,28 @@ class control
      * Initializes and binds to all sockets.
      */
     control(zmq::context_t &ctx, int port) :
-            publisher(ctx, ZMQ_PUB)
+            publisher(ctx, ZMQ_PUB),
+            response(ctx, ZMQ_REP)
     {
 
         std::string pgm_address = std::string("epgm://*:")
                 + std::to_string(port);
 
+        // Broadcast to the inproc control channel and on IPC if
+        // anyone is listening.
         publisher.bind("inproc://control");
         publisher.bind("ipc://lattice-control-plane");
-        //publisher.bind(pgm_address.c_str());
+
+        // Listen for requests to broadcast locally.
+        response.bind("inproc://control-post");
+
+        // Spawn a thread to proxy messages from the post
+        // channel to the broadcast channel.
+        fwd_thread = std::unique_ptr<std::thread>(
+                new std::thread([&]{
+                    zmq_proxy(response, publisher, nullptr);
+                })
+        );
 
     }
 
@@ -57,9 +74,14 @@ class control
     void _shutdown()
     {
         publisher.close();
+        response.close();
+        fwd_thread->join();
     }
 
 public:
+    ~control() {
+        //_shutdown();
+    }
 
     /** Send a message on the control plane.
      *

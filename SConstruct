@@ -18,8 +18,8 @@ env = Environment(
     tools=['default', 'protoc']
 )
 
-env.Replace(CC="clang")
-env.Replace(CXX="clang++")
+#env.Replace(CC="clang")
+#env.Replace(CXX="clang++")
 
 env.Append(CXXFLAGS="-std=c++11 -g")
 env.Append(LIBPATH=['.', os.path.join(toolchain_path, "lib")])
