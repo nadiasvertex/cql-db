@@ -3,6 +3,7 @@
 
 #include <set>
 #include <sstream>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -54,6 +55,19 @@ private:
 
     unsigned long max_atom_size;
 
+    std::tuple<bool, atom_type*, index_map_type::iterator>
+    find_row(row_id) {
+        for(auto i=0; i<atoms.size(); ++i) {
+            auto &index = atoms[i]->index;
+            auto pos = index.find(row_id);
+            if (pos!=index.end()) {
+                return make_tuple(true, atoms[i].get(), pos);
+            }
+        }
+
+        return make_tuple(false, nullptr, atoms.back()->index.end());
+    }
+
 public:
 
     page():max_atom_size(1024*1024) {
@@ -66,14 +80,18 @@ public:
      * @param row_id: The row id to look for.
      */
     void delete_row(row_id_type row_id) {
-        for(auto i=0; i<atoms.size(); ++i) {
-            auto &index = atoms[i]->index;
-            auto pos = index.find(row_id);
-            if (pos!=index.end()) {
-                index.erase(pos);
-                break;
-            }
+        auto el = find_row(row_id);
+
+        // If it was not found, return.
+        if (!get<0>(el)) {
+            return;
         }
+
+        auto atom = get<1>(el);
+        auto pos = get<2>(el);
+
+        // Perform the deletion.
+        atom->index.erase(pos);
     }
 
     /**
@@ -109,6 +127,43 @@ public:
         if (atoms.size()==0 || atoms.back()->size > max_atom_size) {
             atoms.push_back(atom_handle_type(new atom_type()));
             atoms.back()->size = 0;
+        }
+
+        atom = atoms.back().get();
+
+        // Make sure we seek to the end of the stream.
+        atom->data.seekp(0,std::ios::end);
+
+        // Find out where that is.
+        auto pos = atom->data.tellp();
+
+        // Write the data.
+        atom->data << data;
+        atom->size += sizeof(data);
+
+        // Update the index.
+        atom->index[row_id] = pos;
+
+        return sizeof(data);
+    }
+
+    /**
+     * Reads an existing row from the page.
+     *
+     * @param row_id: The row to associate with the data.
+     * @param data: The data to read.
+     *
+     * @returns: The number of bytes read.
+     *
+     * @note: This should only be used with basic data types.
+     */
+    template<typename T>
+    std::tuple<bool, size_type> fetch_row(row_id_type row_id, const T& data) {
+        atom_type* atom { nullptr };
+
+        // If the atom is empty, we cannot read it.
+        if (atoms.size()==0) {
+            return make_tuple(false, 0);
         }
 
         atom = atoms.back().get();
