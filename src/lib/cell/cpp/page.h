@@ -15,7 +15,8 @@ namespace cell
 /**
  * A page contains data for a single column.
  */
-class page {
+class page
+{
 public:
     typedef unsigned char byte_type;
 
@@ -31,7 +32,8 @@ public:
 
     typedef std::unordered_map<row_id_type, std::streampos> index_map_type;
 
-    typedef struct atom {
+    typedef struct atom
+    {
         // This is the column to row index. It maps a rowid to an
         // offset on the page.
         index_map_type index;
@@ -41,6 +43,15 @@ public:
 
         // The number of bytes written to this atom.
         atom_size_type size;
+
+        atom() :
+                size(0), data(
+                        atom_data_type::in
+                        | atom_data_type::out
+                        | atom_data_type::binary)
+        {
+        }
+        ;
     } atom_type;
 
     typedef std::unique_ptr<atom_type> atom_handle_type;
@@ -55,22 +66,27 @@ private:
 
     unsigned long max_atom_size;
 
-    std::tuple<bool, atom_type*, index_map_type::iterator>
-    find_row(row_id_type row_id) {
-        for(auto i=0; i<atoms.size(); ++i) {
+    std::tuple<bool, atom_type*, index_map_type::iterator> find_row(
+            row_id_type row_id)
+    {
+        for (auto i = 0; i < atoms.size(); ++i)
+            {
             auto &index = atoms[i]->index;
             auto pos = index.find(row_id);
-            if (pos!=index.end()) {
+            if (pos != index.end())
+                {
                 return std::make_tuple(true, atoms[i].get(), pos);
+                }
             }
-        }
 
         return std::make_tuple(false, nullptr, atoms.back()->index.end());
     }
 
 public:
 
-    page():max_atom_size(1024*1024) {
+    page() :
+            max_atom_size(1024 * 1024)
+    {
 
     }
 
@@ -79,7 +95,8 @@ public:
      *
      * @param row_id: The row id to look for.
      */
-    void delete_row(row_id_type row_id) {
+    void delete_row(row_id_type row_id)
+    {
         bool result;
         atom_type* atom;
         index_map_type::iterator pos;
@@ -88,9 +105,10 @@ public:
         std::tie(result, atom, pos) = el;
 
         // If it was not found, return.
-        if (!result) {
+        if (!result)
+            {
             return;
-        }
+            }
 
         // Perform the deletion.
         atom->index.erase(pos);
@@ -103,10 +121,12 @@ public:
      *
      * @remarks: This function has not been optimized.
      */
-    void delete_rows(row_set_type rows) {
-        for(auto row : rows) {
+    void delete_rows(row_set_type rows)
+    {
+        for (auto row : rows)
+            {
             delete_row(row);
-        }
+            }
     }
 
     /**
@@ -122,25 +142,32 @@ public:
      * but its size will not be accurately recorded.
      */
     template<typename T>
-    size_type insert_row(row_id_type row_id, const T& data) {
-        atom_type* atom { nullptr };
+    size_type insert_row(row_id_type row_id, const T& data)
+    {
+        atom_type* atom
+            {
+            nullptr
+            };
 
         // If the atom is full, create a new one.
-        if (atoms.size()==0 || atoms.back()->size > max_atom_size) {
+        if (atoms.size() == 0 || atoms.back()->size > max_atom_size)
+            {
             atoms.push_back(atom_handle_type(new atom_type()));
-            atoms.back()->size = 0;
-        }
+            }
 
         atom = atoms.back().get();
 
         // Make sure we seek to the end of the stream.
-        atom->data.seekp(0,std::ios::end);
+        atom->data.seekp(0, std::ios::end);
 
         // Find out where that is.
         auto pos = atom->data.tellp();
 
         // Write the data.
-        atom->data << data;
+        atom->data.write(static_cast<const char*>(
+                           static_cast<const void*>(&data)
+                         ), sizeof(data)
+        );
         atom->size += sizeof(data);
 
         // Update the index.
@@ -160,12 +187,14 @@ public:
      * @note: This should only be used with basic data types.
      */
     template<typename T>
-    std::tuple<bool, size_type> fetch_row(row_id_type row_id, T& data) {
+    std::tuple<bool, size_type> fetch_row(row_id_type row_id, T& data)
+    {
 
         // If the atom is empty, we cannot read it.
-        if (atoms.size()==0) {
+        if (atoms.size() == 0)
+            {
             return std::make_tuple(false, 0);
-        }
+            }
 
         bool result;
         atom_type* atom;
@@ -174,20 +203,23 @@ public:
         auto el = find_row(row_id);
         std::tie(result, atom, pos) = el;
 
-        if (!result) {
+        if (!result)
+            {
             return std::make_tuple(false, 0);
-        }
+            }
 
         // Seek to the proper position
         atom->data.seekg(pos->second);
 
         // Read the data.
-        atom->data >> data;
+        atom->data.read(static_cast<char*>(
+                         static_cast<void*>(&data)
+                        ), sizeof(data)
+        );
 
         // Return success.
         return std::make_tuple(true, sizeof(data));
     }
-
 
 };
 
