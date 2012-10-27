@@ -1,6 +1,7 @@
 #ifndef __LATTICE_CELL_PAGE_H__
 #define __LATTICE_CELL_PAGE_H__
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <set>
@@ -20,23 +21,31 @@ namespace cell
 class page
 {
 public:
+  /** The type of bytes for a page. */
   typedef unsigned char byte_type;
 
-  typedef unsigned long long row_id_type;
+  /** The type of object identifiers. */
+  typedef unsigned long long object_id_type;
 
+  /** The type for parameters indicating size. */
   typedef size_t size_type;
 
+  /** The type storing how large an atom can be. */
   typedef unsigned long atom_size_type;
 
-  typedef std::set<row_id_type> row_set_type;
+  /** The type for object sets. */
+  typedef std::set<object_id_type> object_set_type;
 
+  /** The type for atom data bulk storage. */
   typedef std::stringstream atom_data_type;
 
-  typedef std::unordered_map<row_id_type, std::streampos> index_map_type;
+  /** The type for the atom index. */
+  typedef std::unordered_map<object_id_type, std::streampos> index_map_type;
 
+  /** The type of an atom. */
   typedef struct atom
   {
-    // This is the column to row index. It maps a rowid to an
+    // This is the column to object index. It maps a objectid to an
     // offset on the page.
     index_map_type index;
 
@@ -54,25 +63,38 @@ public:
     ;
   } atom_type;
 
+  /** A handle to an atom. */
   typedef std::unique_ptr<atom_type> atom_handle_type;
 
+  /** A list of atom handles. */
   typedef std::vector<atom_handle_type> atom_list_type;
 
 private:
+  //==----------------------------------------------------------==//
+  //                        Data
+  //==----------------------------------------------------------==//
+
   /**
    * This is the list of atoms.
    */
   atom_list_type atoms;
 
-  unsigned long max_atom_size;
+  /**
+   * The maximum size an atom can attain.
+   */
+  atom_size_type max_atom_size;
 
-  std::tuple<bool, atom_type*, index_map_type::iterator> find_row(
-      row_id_type row_id)
+  //==----------------------------------------------------------==//
+  //                    Helper Functions
+  //==----------------------------------------------------------==//
+
+  std::tuple<bool, atom_type*, index_map_type::iterator> find_object(
+      object_id_type object_id)
   {
     for (auto i = 0; i < atoms.size(); ++i)
       {
         auto &index = atoms[i]->index;
-        auto pos = index.find(row_id);
+        auto pos = index.find(object_id);
         if (pos != index.end())
           {
             return std::make_tuple(true, atoms[i].get(), pos);
@@ -105,18 +127,43 @@ public:
 
   }
 
-  /**
-   * Deletes the given row from this page.
+  //==----------------------------------------------------------==//
+  //                          API
+  //==----------------------------------------------------------==//
+
+  /** Set the maximum atom size.
    *
-   * @param row_id: The row id to look for.
+   * If the new size is zero, the current
+   * maximum size will not be set, and only
+   * the old size will be returned.
+   *
+   * @param new_size: The new size, in bytes, that
+   *                  an atom can store.
+   *
+   * @returns: The previous maximum atom size.
    */
-  void delete_row(row_id_type row_id)
+  atom_size_type set_max_atom_size(atom_size_type new_size)
+  {
+    auto old = max_atom_size;
+    if (new_size > 0)
+      {
+        max_atom_size = new_size;
+      }
+    return old;
+  }
+
+  /**
+   * Deletes the given object from this page.
+   *
+   * @param object_id: The object id to look for.
+   */
+  void delete_object(object_id_type object_id)
   {
     bool result;
     atom_type* atom;
     index_map_type::iterator pos;
 
-    auto el = find_row(row_id);
+    auto el = find_object(object_id);
     std::tie(result, atom, pos) = el;
 
     // If it was not found, return.
@@ -127,27 +174,40 @@ public:
 
     // Perform the deletion.
     atom->index.erase(pos);
-  }
 
-  /**
-   * Deletes the given row from this page.
-   *
-   * @param rows: The set of rows to delete.
-   *
-   * @remarks: This function has not been optimized.
-   */
-  void delete_rows(row_set_type rows)
-  {
-    for (auto row : rows)
+    // Potentially erase the atom.
+    if (atom->size == 0)
       {
-        delete_row(row);
+        for (auto p = atoms.begin(); p != atoms.end(); ++p)
+          {
+            if (p->get() == atom)
+              {
+                atoms.erase(p);
+                break;
+              }
+          }
       }
   }
 
   /**
-   * Writes a new row into the page.
+   * Deletes the given object from this page.
    *
-   * @param row_id: The row to associate with the data.
+   * @param objects: The set of objects to delete.
+   *
+   * @remarks: This function has not been optimized.
+   */
+  void delete_objects(object_set_type objects)
+  {
+    for (auto object : objects)
+      {
+        delete_object(object);
+      }
+  }
+
+  /**
+   * Writes a new object into the page.
+   *
+   * @param object_id: The object to associate with the data.
    * @param data: The data to write.
    *
    * @returns: The number of bytes written.
@@ -157,12 +217,12 @@ public:
    * but its size will not be accurately recorded.
    */
   template<typename T>
-  size_type insert_row(row_id_type row_id, const T& data);
+  size_type insert_object(object_id_type object_id, const T& data);
 
   /**
-   * Reads an existing row from the page.
+   * Reads an existing object from the page.
    *
-   * @param row_id: The row to associate with the data.
+   * @param object_id: The object to associate with the data.
    * @param data: The data to read.
    *
    * @returns: The number of bytes read.
@@ -170,8 +230,13 @@ public:
    * @note: This should only be used with basic data types.
    */
   template<typename T>
-  std::tuple<bool, size_type> fetch_row(row_id_type row_id, T& data);
+  std::tuple<bool, size_type> fetch_object(object_id_type object_id, T& data);
 };
+
+  //==----------------------------------------------------------==//
+  //                    Implementation
+  //==----------------------------------------------------------==//
+
 
 /**
  * Writes a data element into a specific atom.
@@ -183,7 +248,8 @@ public:
  *
  */
 template<typename T>
-void _insert_row(page::atom_type*atom, const T& data)
+void
+_insert_object(page::atom_type*atom, const T& data)
 {
   // Write the data.
   atom->data.write(static_cast<const char*>(static_cast<const void*>(&data)),
@@ -202,11 +268,12 @@ void _insert_row(page::atom_type*atom, const T& data)
  *
  */
 template<>
-void _insert_row<>(page::atom_type*atom, const std::string& data)
+void
+_insert_object<>(page::atom_type*atom, const std::string& data)
 {
   // Write the length of the string first.
   std::uint32_t size = data.size();
-  _insert_row(atom, size);
+  _insert_object(atom, size);
 
   // Write the data.
   atom->data.write(data.c_str(), data.size());
@@ -221,7 +288,8 @@ void _insert_row<>(page::atom_type*atom, const std::string& data)
  *
  */
 template<typename T>
-page::size_type _fetch_row(page::atom_type*atom, T& data)
+page::size_type
+_fetch_object(page::atom_type*atom, T& data)
 {
   // Read the data.
   atom->data.read(static_cast<char*>(static_cast<void*>(&data)), sizeof(data));
@@ -239,11 +307,12 @@ page::size_type _fetch_row(page::atom_type*atom, T& data)
  *
  */
 template<>
-page::size_type _fetch_row<>(page::atom_type*atom, std::string& data)
+page::size_type
+_fetch_object<>(page::atom_type*atom, std::string& data)
 {
   // Read the length of the string first.
   std::uint32_t size = data.size();
-  _fetch_row(atom, size);
+  _fetch_object(atom, size);
 
   char buf[size];
 
@@ -257,9 +326,9 @@ page::size_type _fetch_row<>(page::atom_type*atom, std::string& data)
 }
 
 /**
- * Writes a new row into the page.
+ * Writes a new object into the page.
  *
- * @param row_id: The row to associate with the data.
+ * @param object_id: The object to associate with the data.
  * @param data: The data to write.
  *
  * @returns: The number of bytes written.
@@ -269,7 +338,8 @@ page::size_type _fetch_row<>(page::atom_type*atom, std::string& data)
  * but its size will not be accurately recorded.
  */
 template<typename T>
-page::size_type page::insert_row(row_id_type row_id, const T& data)
+page::size_type
+page::insert_object(object_id_type object_id, const T& data)
 {
   auto atom = get_last_atom();
 
@@ -281,18 +351,18 @@ page::size_type page::insert_row(row_id_type row_id, const T& data)
   auto initial_size = atom->size;
 
   // Hand off the write.
-  _insert_row(atom, data);
+  _insert_object(atom, data);
 
   // Update the index.
-  atom->index[row_id] = pos;
+  atom->index[object_id] = pos;
 
   return atom->size - initial_size;
 }
 
 /**
- * Reads an existing row from the page.
+ * Reads an existing object from the page.
  *
- * @param row_id: The row to associate with the data.
+ * @param object_id: The object to associate with the data.
  * @param data: The data to read.
  *
  * @returns: The number of bytes read.
@@ -300,7 +370,8 @@ page::size_type page::insert_row(row_id_type row_id, const T& data)
  * @note: This should only be used with basic data types.
  */
 template<typename T>
-std::tuple<bool, page::size_type> page::fetch_row(row_id_type row_id, T& data)
+std::tuple<bool, page::size_type>
+page::fetch_object(object_id_type object_id, T& data)
 {
   bool result;
   atom_type* atom;
@@ -312,8 +383,8 @@ std::tuple<bool, page::size_type> page::fetch_row(row_id_type row_id, T& data)
       return std::make_tuple(false, 0);
     }
 
-  // Get the row and unpack the results.
-  auto el = find_row(row_id);
+  // Get the object and unpack the results.
+  auto el = find_object(object_id);
   std::tie(result, atom, pos) = el;
 
   if (!result)
@@ -325,7 +396,7 @@ std::tuple<bool, page::size_type> page::fetch_row(row_id_type row_id, T& data)
   atom->data.seekg(pos->second);
 
   // Return success.
-  return std::make_tuple(true, _fetch_row(atom, data));
+  return std::make_tuple(true, _fetch_object(atom, data));
 }
 
 }
