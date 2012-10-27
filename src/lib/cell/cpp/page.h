@@ -30,6 +30,8 @@ public:
   /** The type for parameters indicating size. */
   typedef size_t size_type;
 
+  typedef uint8_t reference_count_type;
+
   /** The type storing how large an atom can be. */
   typedef unsigned long atom_size_type;
 
@@ -39,8 +41,15 @@ public:
   /** The type for atom data bulk storage. */
   typedef std::stringstream atom_data_type;
 
+  /** The type for an object reference. */
+  typedef struct object_reference
+  {
+    std::streampos offset;
+    reference_count_type ref_count;
+  } object_reference_type;
+
   /** The type for the atom index. */
-  typedef std::unordered_map<object_id_type, std::streampos> index_map_type;
+  typedef std::unordered_map<object_id_type, object_reference_type> index_map_type;
 
   /** The type of an atom. */
   typedef struct atom
@@ -88,20 +97,27 @@ private:
   //                    Helper Functions
   //==----------------------------------------------------------==//
 
-  std::tuple<bool, atom_type*, index_map_type::iterator> find_object(
-      object_id_type object_id)
+  /**
+   * Finds out where an object is located and returns that information.
+   *
+   * @param object_id: The object id to find.
+   *
+   * returns: A tuple of (result, atoms::iterator, index::iterator)
+   */
+  std::tuple<bool, atom_list_type::iterator, index_map_type::iterator>
+  find_object(object_id_type object_id)
   {
-    for (auto i = 0; i < atoms.size(); ++i)
+    for (auto atom = atoms.begin(); atom != atoms.end(); ++atom)
       {
-        auto &index = atoms[i]->index;
+        auto &index = (*atom)->index;
         auto pos = index.find(object_id);
         if (pos != index.end())
           {
-            return std::make_tuple(true, atoms[i].get(), pos);
+            return std::make_tuple(true, atom, pos);
           }
       }
 
-    return std::make_tuple(false, nullptr, atoms.back()->index.end());
+    return std::make_tuple(false, atoms.end(), atoms.back()->index.end());
   }
 
   /**
@@ -160,7 +176,7 @@ public:
   void delete_object(object_id_type object_id)
   {
     bool result;
-    atom_type* atom;
+    atom_list_type::iterator atom;
     index_map_type::iterator pos;
 
     auto el = find_object(object_id);
@@ -173,18 +189,19 @@ public:
       }
 
     // Perform the deletion.
-    atom->index.erase(pos);
-
-    // Potentially erase the atom.
-    if (atom->size == 0)
+    pos->second.ref_count--;
+    if (pos->second.ref_count == 0)
       {
-        for (auto p = atoms.begin(); p != atoms.end(); ++p)
+        auto ap = (*atom).get();
+
+        // Erase the object.
+        ap->index.erase(pos);
+
+        // Potentially erase the atom.
+        // Note: this could use serious optimization.
+        if (ap->size == 0)
           {
-            if (p->get() == atom)
-              {
-                atoms.erase(p);
-                break;
-              }
+            atoms.erase(atom);
           }
       }
   }
@@ -233,10 +250,9 @@ public:
   std::tuple<bool, size_type> fetch_object(object_id_type object_id, T& data);
 };
 
-  //==----------------------------------------------------------==//
-  //                    Implementation
-  //==----------------------------------------------------------==//
-
+//==----------------------------------------------------------==//
+//                    Implementation
+//==----------------------------------------------------------==//
 
 /**
  * Writes a data element into a specific atom.
@@ -354,7 +370,7 @@ page::insert_object(object_id_type object_id, const T& data)
   _insert_object(atom, data);
 
   // Update the index.
-  atom->index[object_id] = pos;
+  atom->index[object_id] = object_reference_type {pos, 1};
 
   return atom->size - initial_size;
 }
@@ -374,7 +390,7 @@ std::tuple<bool, page::size_type>
 page::fetch_object(object_id_type object_id, T& data)
 {
   bool result;
-  atom_type* atom;
+  atom_list_type::iterator atom;
   index_map_type::iterator pos;
 
   // If the atom is empty, we cannot read it.
@@ -392,11 +408,13 @@ page::fetch_object(object_id_type object_id, T& data)
       return std::make_tuple(false, 0);
     }
 
+  auto ap = (*atom).get();
+
   // Seek to the proper position
-  atom->data.seekg(pos->second);
+  ap->data.seekg(pos->second.offset);
 
   // Return success.
-  return std::make_tuple(true, _fetch_object(atom, data));
+  return std::make_tuple(true, _fetch_object(ap, data));
 }
 
 }
