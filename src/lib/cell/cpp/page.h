@@ -147,7 +147,8 @@ public:
   //                          API
   //==----------------------------------------------------------==//
 
-  /** Set the maximum atom size.
+  /**
+   * Set the maximum atom size.
    *
    * If the new size is zero, the current
    * maximum size will not be set, and only
@@ -222,6 +223,39 @@ public:
   }
 
   /**
+   * Acquires a reference count to this object. This is used
+   * by MVCC. A reference is removed by simply calling delete_object.
+   * The object will be released when its references are all done.
+   */
+  bool acquire_object(object_id_type object_id)
+  {
+    bool result;
+    atom_list_type::iterator atom;
+    index_map_type::iterator pos;
+
+    // If the atom is empty, we cannot read it.
+    if (atoms.size() == 0)
+      {
+        return false;
+      }
+
+    // Get the object and unpack the results.
+    auto el = find_object(object_id);
+    std::tie(result, atom, pos) = el;
+
+    // No object, bail.
+    if (!result)
+      {
+        return false;
+      }
+
+    // Update the object's ref count.
+    pos->second.ref_count++;
+
+    return true;
+  }
+
+  /**
    * Writes a new object into the page.
    *
    * @param object_id: The object to associate with the data.
@@ -248,6 +282,7 @@ public:
    */
   template<typename T>
   std::tuple<bool, size_type> fetch_object(object_id_type object_id, T& data);
+
 };
 
 //==----------------------------------------------------------==//
@@ -370,7 +405,10 @@ page::insert_object(object_id_type object_id, const T& data)
   _insert_object(atom, data);
 
   // Update the index.
-  atom->index[object_id] = object_reference_type {pos, 1};
+  atom->index[object_id] = object_reference_type
+    {
+    pos, 1
+    };
 
   return atom->size - initial_size;
 }

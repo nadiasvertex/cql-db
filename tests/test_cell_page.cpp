@@ -126,3 +126,22 @@ TEST(PageTest, CanDeleteMany)
     }
 }
 
+TEST(PageTest, CanAcquire)
+{
+  lattice::cell::page page;
+
+  int a = 5;
+
+  page.insert_object(0, a);
+  page.acquire_object(0);
+  page.delete_object(0);
+
+  // Should be able to get it the first time (refcount=1)
+  EXPECT_TRUE(std::get<0>(page.fetch_object(0, a)));
+
+  page.delete_object(0);
+  // Should not be able to get it the second time (recount=0)
+  EXPECT_FALSE(std::get<0>(page.fetch_object(0, a)));
+}
+
+
