@@ -2,6 +2,7 @@
 #define __LATTICE_CELL_PAGE_H__
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <set>
@@ -44,8 +45,50 @@ public:
   /** The type for an object reference. */
   typedef struct object_reference
   {
-    std::streampos offset;
+    bool forwarded;
+
     reference_count_type ref_count;
+
+    union
+    {
+      // If not forwarded, this represents the actual data pointer
+      std::streampos offset;
+
+      // If forwarded, the id is set to the object id that points to the data.
+      object_id_type id;
+    };
+
+    /** Create a new object reference to an offset in the page. */
+    object_reference(const std::streampos& _offset) :
+        forwarded(false), ref_count(1), offset(_offset)
+    {
+    }
+    ;
+
+    /** Create a new object reference that forwards to another
+     * reference.
+     */
+    object_reference(const object_id_type& _oid) :
+        forwarded(true), ref_count(1), id(_oid)
+    {
+    }
+    ;
+
+    object_reference(const object_reference& o)
+    {
+      forwarded = o.forwarded;
+      ref_count = o.ref_count;
+
+      if (forwarded)
+        {
+          id = o.id;
+        }
+      else
+        {
+          offset = o.offset;
+        }
+    }
+
   } object_reference_type;
 
   /** The type for the atom index. */
@@ -70,6 +113,7 @@ public:
     {
     }
     ;
+
   } atom_type;
 
   /** A handle to an atom. */
@@ -226,6 +270,8 @@ public:
    * Acquires a reference count to this object. This is used
    * by MVCC. A reference is removed by simply calling delete_object.
    * The object will be released when its references are all done.
+   *
+   * @param object_id: The object id to acquire.
    */
   bool acquire_object(object_id_type object_id)
   {
@@ -405,10 +451,7 @@ page::insert_object(object_id_type object_id, const T& data)
   _insert_object(atom, data);
 
   // Update the index.
-  atom->index[object_id] = object_reference_type
-    {
-    pos, 1
-    };
+  atom->index.insert({object_id, object_reference_type(pos)});
 
   return atom->size - initial_size;
 }
