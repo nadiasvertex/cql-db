@@ -22,12 +22,6 @@ class table
   typedef std::array<page::object_id_type, number_of_columns> row_type;
 
   /**
-   * The column definition is an array of columns that contain information
-   * about the type of data stored in the column.
-   */
-  typedef std::array<column, number_of_columns> column_definition_type;
-
-  /**
    * The column data is stored in a fixed size array for the table. Thus,
    * altering a table requires creating a new table object and moving the
    * important data from the old table to the new table.
@@ -45,11 +39,6 @@ class table
    * The list of rows assigned to the table.
    */
   row_list_type rows;
-
-  /**
-   * The column definitions for this table.
-   */
-  column_definition_type column_definitions;
 
   /**
    * The column data for this table.
@@ -71,13 +60,27 @@ class table
    * @returns: true if it worked, false if it didn't.
    */
   bool set_column_definition(unsigned int column_number, const column& col) {
-    if (column_number >= column_definitions.size()) {
+    if (column_number >= column_data.size()) {
         return false;
     }
 
-    column_definitions[column_number] = col;
+    if (column_data[column_number].valid()) {
+        // This means that we have already set the column definition
+        // and overwriting it would cause data loss. In this case we
+        // need to alter the definition so that we migrate the data
+        // to the new format.
+        //
+        // This function is not currently implemented, so return false.
+        return false;
+    }
+
+    // Create a new column and set the definition.
+    column_data[column_number] = page_handle_type(new page(col));
+
     return true;
   }
+
+
 
   
 };
