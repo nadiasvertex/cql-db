@@ -58,7 +58,9 @@ public:
   table(unsigned int _number_of_columns) :
       number_of_columns(_number_of_columns)
   {
-    column_data.reserve(number_of_columns);
+    for(auto i=0; i<number_of_columns; ++i) {
+        column_data.push_back(page_handle_type(nullptr));
+    }
   }
 
   /**
@@ -85,7 +87,7 @@ public:
         return false;
       }
 
-    /*if (column_data[column_number].get() != nullptr)
+    if (column_data[column_number].get() != nullptr)
       {
         // This means that we have already set the column definition
         // and overwriting it would cause data loss. In this case we
@@ -94,7 +96,7 @@ public:
         //
         // This function is not currently implemented, so return false.
         return false;
-      }*/
+      }
 
     // Create a new column and set the definition.
     column_data[column_number] = page_handle_type(new page(col));

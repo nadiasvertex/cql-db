@@ -31,8 +31,7 @@ TEST(TableTest, CanSetColumnDefinition)
     {
     1
     };
-  lattice::cell::column
-c1 {
+  auto *c1 = new lattice::cell::column {
     .type = lattice::cell::column::data_type::integer,
     .name = "col1"
   };
@@ -46,8 +45,7 @@ TEST(TableTest, CanInsertRow)
     {
     1
     };
-  lattice::cell::column
-  c1
+  auto *c1 = new lattice::cell::column
     {
       .type = lattice::cell::column::data_type::integer,
       .name = "col1"
@@ -71,8 +69,7 @@ TEST(TableTest, CanInsertManyRows)
     {
     1
     };
-  lattice::cell::column
-  c1
+  auto *c1 = new lattice::cell::column
     {
       .type = lattice::cell::column::data_type::integer,
       .name = "col1"
@@ -100,8 +97,7 @@ TEST(TableTest, CanFetchRow)
     {
     1
     };
-  lattice::cell::column
-  c1
+  auto *c1 = new lattice::cell::column
     {
       .type = lattice::cell::column::data_type::integer,
       .name = "col1"
