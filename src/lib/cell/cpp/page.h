@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <cell/cpp/column.h>
+
 namespace lattice
 {
 namespace cell
@@ -127,6 +129,8 @@ private:
   //                        Data
   //==----------------------------------------------------------==//
 
+  const atom_size_type k_max_atom_size = 1024 * 1024;
+
   /**
    * This is the list of atoms.
    */
@@ -136,6 +140,11 @@ private:
    * The maximum size an atom can attain.
    */
   atom_size_type max_atom_size;
+
+  /**
+   * The column definition.
+   */
+  column_handle_type column;
 
   //==----------------------------------------------------------==//
   //                    Helper Functions
@@ -179,13 +188,25 @@ private:
     return atoms.back().get();
   }
 
-public:
-
-  page() :
-      max_atom_size(1024 * 1024)
+  page(atom_size_type _max_atom_size, column_handle_type _col) :
+      max_atom_size(_max_atom_size), column(_col)
   {
 
   }
+
+public:
+
+  page() :
+      page(k_max_atom_size, nullptr)
+  {
+
+  }
+
+  page(column_handle_type _col) : page(k_max_atom_size, _col)
+  {
+
+  }
+
 
   //==----------------------------------------------------------==//
   //                          API
@@ -331,6 +352,11 @@ public:
 
 };
 
+/**
+ * Tracks a page.
+ */
+typedef std::unique_ptr<page> page_handle_type;
+
 //==----------------------------------------------------------==//
 //                    Implementation
 //==----------------------------------------------------------==//
@@ -345,7 +371,7 @@ public:
  *
  */
 template<typename T>
-void
+static void
 _insert_object(page::atom_type*atom, const T& data)
 {
   // Write the data.
@@ -385,7 +411,7 @@ _insert_object<>(page::atom_type*atom, const std::string& data)
  *
  */
 template<typename T>
-page::size_type
+static page::size_type
 _fetch_object(page::atom_type*atom, T& data)
 {
   // Read the data.
@@ -451,7 +477,10 @@ page::insert_object(object_id_type object_id, const T& data)
   _insert_object(atom, data);
 
   // Update the index.
-  atom->index.insert({object_id, object_reference_type(pos)});
+  atom->index.insert(
+    {
+    object_id, object_reference_type(pos)
+    });
 
   return atom->size - initial_size;
 }
