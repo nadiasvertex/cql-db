@@ -235,6 +235,20 @@ public:
   }
 
   /**
+   * Counts how much data is stored in this page,
+   * and returns the value.
+   */
+  std::uint64_t size() {
+    std::uint64_t total_size = 0;
+
+    for(int i=0; i<atoms.size(); ++i) {
+        total_size += atoms[i]->size;
+    }
+
+    return total_size;
+  }
+
+  /**
    * Deletes the given object from this page.
    *
    * @param object_id: The object id to look for.

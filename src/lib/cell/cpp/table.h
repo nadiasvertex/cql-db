@@ -64,7 +64,7 @@ class table
         return false;
     }
 
-    if (column_data[column_number].valid()) {
+    if (column_data[column_number].get()!=nullptr) {
         // This means that we have already set the column definition
         // and overwriting it would cause data loss. In this case we
         // need to alter the definition so that we migrate the data
@@ -74,8 +74,11 @@ class table
         return false;
     }
 
+    // Copy the existing definition
+    auto col_def = column_handle_type(new column(col));
+
     // Create a new column and set the definition.
-    column_data[column_number] = page_handle_type(new page(col));
+    column_data[column_number] = page_handle_type(new page(col_def));
 
     return true;
   }
