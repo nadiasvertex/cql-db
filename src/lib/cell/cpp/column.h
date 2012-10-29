@@ -39,6 +39,7 @@ struct column {
    int size;
    int precision;
 
+   bool nullable;
 };
 
 typedef std::unique_ptr<column> column_handle_type;

@@ -164,6 +164,11 @@ public:
 
 };
 
+/**
+ * Tracks a table. May be shared among various objects.
+ */
+typedef std::shared_ptr<table> table_handle_type;
+
 } // namespace cell
 } // namespace lattice
 
