@@ -31,97 +31,163 @@ TEST(TableTest, CanSetColumnDefinition)
     {
     1
     };
-  auto *c1 = new lattice::cell::column {
+auto *c1 = new lattice::cell::column
+  {
     .type = lattice::cell::column::data_type::integer,
     .name = "col1"
-  };
+  }
+;
 
-    EXPECT_TRUE(t.set_column_definition(0, c1));
+EXPECT_TRUE(t.set_column_definition(0, c1));
 }
 
 TEST(TableTest, CanInsertRow)
 {
-  lattice::cell::table t
-    {
-    1
-    };
-  auto *c1 = new lattice::cell::column
-    {
-      .type = lattice::cell::column::data_type::integer,
-      .name = "col1"
-    };
+lattice::cell::table t
+{
+1
+};
+auto *c1 = new lattice::cell::column
+{
+.type = lattice::cell::column::data_type::integer,
+.name = "col1"
+}
+;
 
-  t.set_column_definition(0, c1);
+t.set_column_definition(0, c1);
 
-  std::uint32_t value = 100;
+std::uint32_t value = 100;
 
-  ASSERT_TRUE(
-      t.insert_row(1, {true},
-      static_cast<std::uint8_t*>(
-      static_cast<void*>(&value)),
-      sizeof(value)
-      ));
+ASSERT_TRUE(
+t.insert_row(1, {true},
+static_cast<std::uint8_t*>(
+static_cast<void*>(&value)),
+sizeof(value)
+));
 }
 
 TEST(TableTest, CanInsertManyRows)
 {
-  lattice::cell::table t
-    {
-    1
-    };
-  auto *c1 = new lattice::cell::column
-    {
-      .type = lattice::cell::column::data_type::integer,
-      .name = "col1"
-    };
+lattice::cell::table t
+{
+1
+};
+auto *c1 = new lattice::cell::column
+{
+.type = lattice::cell::column::data_type::integer,
+.name = "col1"
+}
+;
 
-  t.set_column_definition(0, c1);
+t.set_column_definition(0, c1);
 
-  std::uint32_t value[10000];
+std::uint32_t value[10000];
 
-  for (auto i = 0; i < 10000; ++i)
+for (auto i = 0; i < 10000; ++i)
     {
       value[i]=i;
       ASSERT_TRUE(
-          t.insert_row(i+1, {true},
-          static_cast<std::uint8_t*>(
-          static_cast<void*>(&value[i])),
-          sizeof(std::uint32_t)
-          ));
-    }
+t.insert_row(i+1, {true},
+static_cast<std::uint8_t*>(
+static_cast<void*>(&value[i])),
+sizeof(std::uint32_t)
+));
+}
 }
 
 TEST(TableTest, CanFetchRow)
 {
-  lattice::cell::table t
-    {
-    1
-    };
-  auto *c1 = new lattice::cell::column
-    {
-      .type = lattice::cell::column::data_type::integer,
-      .name = "col1"
-    };
+lattice::cell::table t
+{
+1
+};
+auto *c1 = new lattice::cell::column
+{
+.type = lattice::cell::column::data_type::integer,
+.name = "col1"
+}
+;
 
-  t.set_column_definition(0, c1);
+t.set_column_definition(0, c1);
 
-  std::uint32_t value1 = 100, value2 = 0;
+std::uint32_t value1 = 100, value2 = 0;
 
-  /*t.insert_row(1,
+t.insert_row(1,
    {
    true
    },
    static_cast<std::uint8_t*>(
    static_cast<void*>(&value1)),
    sizeof(value1)
-   );*/
+   );
 
-  /*EXPECT_TRUE(t.fetch_row(1,
-   {
-   true
-   },
-   static_cast<std::uint8_t*>(
-   static_cast<void*>(&value2)),
-   sizeof(value2)
-   ));*/
+  EXPECT_TRUE(t.fetch_row(1,
+{
+true
+},
+static_cast<std::uint8_t*>(
+static_cast<void*>(&value2)),
+sizeof(value2)
+));
+}
+
+TEST(TableTest, CanFetchManyRows)
+{
+  lattice::cell::table t
+    {
+    1
+    };
+
+  auto *c1 = new lattice::cell::column
+  {
+  .type = lattice::cell::column::data_type::integer,
+  .name = "col1"
+  }
+  ;
+
+  t.set_column_definition(0, c1);
+
+  std::uint32_t value[10000], value2[10000];
+
+  for (auto i = 0; i < 10000; ++i)
+    {
+      value[i]=i;
+
+      t.insert_row(i+1,
+      {true},
+      static_cast<std::uint8_t*>(
+      static_cast<void*>(&value[i])),
+      sizeof(std::uint32_t));
+
+      EXPECT_TRUE(t.fetch_row(i+1,
+      {
+      true
+      },
+      static_cast<std::uint8_t*>(
+      static_cast<void*>(&value2[i])),
+      sizeof(std::uint32_t)
+      ));
+
+      EXPECT_EQ(value[i], value2[i]);
+
+    }
+
+  // Fetch again, just to make sure it's still right.
+  for (auto i = 0; i < 10000; ++i)
+    {
+      value2[i] = 0;
+
+      EXPECT_TRUE(t.fetch_row(i+1,
+      {
+      true
+      },
+      static_cast<std::uint8_t*>(
+      static_cast<void*>(&value2[i])),
+      sizeof(std::uint32_t)
+      ));
+
+      EXPECT_EQ(value[i], value2[i]);
+
+    }
+
 }
