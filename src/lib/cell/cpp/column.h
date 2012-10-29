@@ -41,7 +41,7 @@ struct column {
 
 };
 
-typedef std::shared_ptr<column> column_handle_type;
+typedef std::unique_ptr<column> column_handle_type;
 
 } // namespace cell
 } // namespace lattice

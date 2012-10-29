@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <cell/cpp/page.h>
 #include <cell/cpp/column.h>
 
 namespace lattice
@@ -146,6 +147,11 @@ private:
    */
   column_handle_type column;
 
+  /**
+   * The next object id for this column.
+   */
+  object_id_type next_oid;
+
   //==----------------------------------------------------------==//
   //                    Helper Functions
   //==----------------------------------------------------------==//
@@ -188,8 +194,13 @@ private:
     return atoms.back().get();
   }
 
-  page(atom_size_type _max_atom_size, column_handle_type _col) :
-      max_atom_size(_max_atom_size), column(_col)
+  /**
+   * Delegating constructor for building a page.
+   */
+  page(atom_size_type _max_atom_size, cell::column* col) :
+      max_atom_size(_max_atom_size),
+          column(col),
+          next_oid(1)
   {
 
   }
@@ -202,11 +213,11 @@ public:
 
   }
 
-  page(column_handle_type _col) : page(k_max_atom_size, _col)
+  page(cell::column *col) :
+      page(k_max_atom_size, col)
   {
 
   }
-
 
   //==----------------------------------------------------------==//
   //                          API
@@ -238,14 +249,35 @@ public:
    * Counts how much data is stored in this page,
    * and returns the value.
    */
-  std::uint64_t size() {
+  std::uint64_t size()
+  {
     std::uint64_t total_size = 0;
 
-    for(int i=0; i<atoms.size(); ++i) {
+    for (int i = 0; i < atoms.size(); ++i)
+      {
         total_size += atoms[i]->size;
-    }
+      }
 
     return total_size;
+  }
+
+  /**
+   * Get the next object id for this column.
+   */
+  object_id_type get_next_oid()
+  {
+    return next_oid++;
+  }
+
+  /**
+   * Gets the column definition for this page.
+   *
+   * You do not own this pointer. Do not store it,
+   * do not delete it.
+   */
+  cell::column* get_column_definition()
+  {
+    return column.get();
   }
 
   /**
@@ -492,9 +524,9 @@ page::insert_object(object_id_type object_id, const T& data)
 
   // Update the index.
   atom->index.insert(
-    {
-    object_id, object_reference_type(pos)
-    });
+        {
+        object_id, object_reference_type(pos)
+        });
 
   return atom->size - initial_size;
 }
