@@ -37,6 +37,11 @@ public:
    */
   typedef std::vector<bool> column_present_type;
 
+  /**
+   * Provides storage for text results read from a command string.
+   */
+  typedef std::vector<std::string> text_tuple_type;
+
 private:
   /**
    * The list of rows assigned to the table.
@@ -138,6 +143,24 @@ public:
   bool fetch_row(page::object_id_type row_id,
       column_present_type present,
       std::uint8_t *buffer, std::size_t buffer_size);
+
+  /**
+   * Converts a text tuple into a binary format.
+   *
+   * @param present: Each bit indicates whether the corresponding
+   *                 column should be present. If the column is
+   *                 marked present in this vector, it will be
+   *                 read from the column store and written into
+   *                 the buffer.
+   *
+   * @param tuple: The text tuple, a list of strings which need
+   *               to be converted into a binary buffer.
+   *
+   * @param buffer: The data buffer to write data into.
+   * @param buffer_size: The size in bytes of the data buffer.
+   */
+  bool to_binary(column_present_type present, text_tuple_type tuple,
+                 std::uint8_t* buffer, std::size_t buffer_size);
 
 };
 

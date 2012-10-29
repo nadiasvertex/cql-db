@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <cell/cpp/table.h>
 
 namespace lattice
@@ -98,6 +99,47 @@ bool table::fetch_row(page::object_id_type row_id, column_present_type present,
     }
 
   return true;
+}
+
+bool table::to_binary(
+    column_present_type present,
+    text_tuple_type tuple,
+    std::uint8_t* buffer,
+    std::size_t buffer_size)
+{
+  std::size_t offset = 0;
+
+  for (auto i = 0; i < number_of_columns; ++i)
+    {
+      // If the column is not present, don't try to write it.
+      if (present.size() <= i || present[i] == false)
+        {
+          continue;
+        }
+
+      // Abort if we are out of buffer space.
+      if (buffer_size <= offset)
+        {
+          return false;
+        }
+
+      // Fetch the bits of information we need to write
+      // the data properly.
+      auto p = column_data[i].get();
+      auto c = p->get_column_definition();
+
+      switch (c->type)
+        {
+
+#include "row_to_binary_int_ops.h"
+
+        default:
+          return false;
+        }
+    }
+
+  return true;
+
 }
 
 } // end namespace cell

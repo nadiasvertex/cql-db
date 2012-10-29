@@ -33,10 +33,27 @@ fetch_case_txt = """
           break;
 """
 
+to_binary_case_txt = """
+        case {type}:
+          {{
+            {cpptype} *data = static_cast<{cpptype}*>(
+                       static_cast<void *>(buffer+offset)
+            );
+            
+            *data = static_cast<{cpptype}>(
+                strtoll(tuple[i].c_str(), NULL, 10)
+            );
+                        
+            offset += sizeof({cpptype});
+          }}
+          break;
+"""
+
+
 int_types = [
-    ("std::uint16_t", "column::data_type::smallint"),
-    ("std::uint32_t", "column::data_type::integer"),
-    ("std::uint64_t", "column::data_type::bigint"),
+    ("std::int16_t", "column::data_type::smallint"),
+    ("std::int32_t", "column::data_type::integer"),
+    ("std::int64_t", "column::data_type::bigint"),
 ]
 
 with open("src/lib/cell/cpp/row_insert_int_ops.h", "w") as out:
@@ -51,3 +68,8 @@ with open("src/lib/cell/cpp/row_fetch_int_ops.h", "w") as out:
            "type":sqltype }
       out.write(fetch_case_txt.format(**d))
 
+with open("src/lib/cell/cpp/row_to_binary_int_ops.h", "w") as out:
+   for cpptype, sqltype in int_types:
+      d = {"cpptype":cpptype,
+           "type":sqltype }
+      out.write(to_binary_case_txt.format(**d))
