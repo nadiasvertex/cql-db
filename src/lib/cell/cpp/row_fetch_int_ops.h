@@ -49,3 +49,37 @@
             offset += std::get<1>(results);
           }
           break;
+
+        case column::data_type::real:
+          {
+            float *data = static_cast<float*>(
+                       static_cast<void *>(buffer+offset)
+            );
+            auto results = p->fetch_object(oid, *data);
+            if (std::get<0>(results)==false ||
+                std::get<1>(results)==0 ||
+                std::get<1>(results)<sizeof(float))
+              {
+                 return false;
+              }
+
+            offset += std::get<1>(results);
+          }
+          break;
+
+        case column::data_type::double_precision:
+          {
+            double *data = static_cast<double*>(
+                       static_cast<void *>(buffer+offset)
+            );
+            auto results = p->fetch_object(oid, *data);
+            if (std::get<0>(results)==false ||
+                std::get<1>(results)==0 ||
+                std::get<1>(results)<sizeof(double))
+              {
+                 return false;
+              }
+
+            offset += std::get<1>(results);
+          }
+          break;

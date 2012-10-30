@@ -40,36 +40,48 @@ to_binary_case_txt = """
                        static_cast<void *>(buffer+offset)
             );
             
-            *data = static_cast<{cpptype}>(
-                strtoll(tuple[i].c_str(), NULL, 10)
-            );
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {{
+                 return false;
+              }}
                         
-            offset += sizeof({cpptype});
+            offset += bytes;
           }}
           break;
 """
 
+primitive_types = [
+    ("std::int16_t",  "column::data_type::smallint"),
+    ("std::int32_t",  "column::data_type::integer"),
+    ("std::int64_t",  "column::data_type::bigint"),
+    ("float",         "column::data_type::real"),
+    ("double",        "column::data_type::double_precision"),
+]
 
-int_types = [
-    ("std::int16_t", "column::data_type::smallint"),
-    ("std::int32_t", "column::data_type::integer"),
-    ("std::int64_t", "column::data_type::bigint"),
+compound_types = [
+    ("std::uint8_t",  "column::data_type::varchar"),
 ]
 
 with open("src/lib/cell/cpp/row_insert_int_ops.h", "w") as out:
-   for cpptype, sqltype in int_types:
+   for cpptype, sqltype in primitive_types:
       d = {"cpptype":cpptype,
            "type":sqltype }
       out.write(insert_case_txt.format(**d))
 
 with open("src/lib/cell/cpp/row_fetch_int_ops.h", "w") as out:
-   for cpptype, sqltype in int_types:
+   for cpptype, sqltype in primitive_types:
       d = {"cpptype":cpptype,
            "type":sqltype }
       out.write(fetch_case_txt.format(**d))
 
 with open("src/lib/cell/cpp/row_to_binary_int_ops.h", "w") as out:
-   for cpptype, sqltype in int_types:
+   for cpptype, sqltype in primitive_types:
+      d = {"cpptype":cpptype,
+           "type":sqltype }
+      out.write(to_binary_case_txt.format(**d))
+
+   for cpptype, sqltype in compound_types:
       d = {"cpptype":cpptype,
            "type":sqltype }
       out.write(to_binary_case_txt.format(**d))

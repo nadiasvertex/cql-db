@@ -405,12 +405,6 @@ public:
    */
   template<typename T>
   std::tuple<bool, size_type> fetch_object(object_id_type object_id, T& data);
-
-
-  //==----------------------------------------------------------==//
-  //                    STL
-  //==----------------------------------------------------------==//
-
   
 
 };

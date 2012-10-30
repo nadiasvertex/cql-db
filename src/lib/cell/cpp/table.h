@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 
+#include <cell/cpp/unstringify.h>
 #include <cell/cpp/page.h>
 
 namespace lattice

@@ -5,11 +5,13 @@
                        static_cast<void *>(buffer+offset)
             );
             
-            *data = static_cast<std::int16_t>(
-                strtoll(tuple[i].c_str(), NULL, 10)
-            );
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {
+                 return false;
+              }
                         
-            offset += sizeof(std::int16_t);
+            offset += bytes;
           }
           break;
 
@@ -19,11 +21,13 @@
                        static_cast<void *>(buffer+offset)
             );
             
-            *data = static_cast<std::int32_t>(
-                strtoll(tuple[i].c_str(), NULL, 10)
-            );
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {
+                 return false;
+              }
                         
-            offset += sizeof(std::int32_t);
+            offset += bytes;
           }
           break;
 
@@ -33,10 +37,60 @@
                        static_cast<void *>(buffer+offset)
             );
             
-            *data = static_cast<std::int64_t>(
-                strtoll(tuple[i].c_str(), NULL, 10)
-            );
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {
+                 return false;
+              }
                         
-            offset += sizeof(std::int64_t);
+            offset += bytes;
+          }
+          break;
+
+        case column::data_type::real:
+          {
+            float *data = static_cast<float*>(
+                       static_cast<void *>(buffer+offset)
+            );
+            
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {
+                 return false;
+              }
+                        
+            offset += bytes;
+          }
+          break;
+
+        case column::data_type::double_precision:
+          {
+            double *data = static_cast<double*>(
+                       static_cast<void *>(buffer+offset)
+            );
+            
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {
+                 return false;
+              }
+                        
+            offset += bytes;
+          }
+          break;
+
+        case column::data_type::varchar:
+          {
+            std::uint8_t *data = static_cast<std::uint8_t*>(
+                       static_cast<void *>(buffer+offset)
+            );
+            
+            auto bytes=unstringify::to_binary(tuple[i], data);
+            if (bytes==0)
+              {
+                 return false;
+              }
+                        
+            offset += bytes;
           }
           break;
