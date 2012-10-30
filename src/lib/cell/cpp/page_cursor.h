@@ -1,6 +1,7 @@
 #ifndef __LATTICE_CELL_PAGE_CURSOR_H__
 #define __LATTICE_CELL_PAGE_CURSOR_H__
 
+#include <cell/cpp/compare.h>
 #include <cell/cpp/page.h>
 
 namespace lattice
@@ -30,12 +31,12 @@ class page_cursor
    */
   bool at_end;
 
-  public:
+public:
 
   page_cursor(page& _page) :
       p(_page),
-      atom_index(0),
-      at_end(false)
+          atom_index(0),
+          at_end(false)
   {
     if (p.atoms.size() > 0)
       {
@@ -68,12 +69,12 @@ class page_cursor
               }
             else
               {
-                at_end=true;
+                at_end = true;
               }
           }
         else
           {
-            at_end=true;
+            at_end = true;
           }
       }
     return *this;
@@ -86,7 +87,8 @@ class page_cursor
    * If the cursor is at the end of the page, the
    * result of this function is undefined.
    */
-  page::object_id_type oid() {
+  page::object_id_type oid()
+  {
     return entry->first;
   }
 
@@ -100,14 +102,38 @@ class page_cursor
    *
    * @returns: The number of bytes written to 'data'.
    */
-  template <typename T>
-  std::size_t value(T& data) {
+  template<typename T>
+  std::size_t value(T& data)
+  {
     auto atom = p.atoms[atom_index].get();
 
     // Seek to the proper position
     atom->data.seekg(entry->second.offset);
 
     return _fetch_object(atom, data);
+  }
+
+  /**
+   * Indicates whether the data pointed to by the cursor
+   * is greater than, less than, or equal to the parameter.
+   *
+   * If the cursor is at the end of the page, the
+   * result of this function is undefined.
+   *
+   * @param data: The data to compare with the cursor.
+   *
+   * @returns: The 0 if equal, 1 if greater, -1 of less.
+   */
+  template<typename T>
+  int cmp(const T& data)
+  {
+    auto atom = p.atoms[atom_index].get();
+
+    // Seek to the proper position
+    atom->data.seekg(entry->second.offset);
+
+    // Compare the data.
+    return cell::cmp(data, atom->data);
   }
 
 };

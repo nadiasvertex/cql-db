@@ -44,3 +44,31 @@ TEST(PageCursorTest, CanIterate)
   }
 }
 
+TEST(PageCursorTest, CanCompare)
+{
+  lattice::cell::page page;
+
+  int a = 5;
+
+  for (auto i = 0; i < 10000; ++i, ++a)
+    {
+      EXPECT_EQ(sizeof(a), page.insert_object(i, a));
+    }
+
+  lattice::cell::page_cursor cursor(page);
+
+  int i=0;
+  while(!cursor.end_of_page()) {
+      int b = 0;
+      int c = i+5;
+
+      EXPECT_EQ(sizeof(b), cursor.value(b));
+      EXPECT_EQ(0, cursor.cmp(b));
+      EXPECT_EQ(0, cursor.cmp(c));
+
+      // Go to the next record.
+      cursor.advance();
+      ++i;
+  }
+}
+
