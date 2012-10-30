@@ -71,7 +71,7 @@ public:
   {
     std::uint32_t size = input.size();
     std::memcpy(output, &size, sizeof(size));
-    output+=size;
+    output+=sizeof(size);
     std::memcpy(output, input.c_str(), size);
     return sizeof(size)+size;
   }
