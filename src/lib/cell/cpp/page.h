@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -18,6 +19,9 @@ namespace lattice
 {
 namespace cell
 {
+
+class page_cursor;
+class page_iterator;
 
 /**
  * A page contains data for a single column.
@@ -124,6 +128,12 @@ public:
 
   /** A list of atom handles. */
   typedef std::vector<atom_handle_type> atom_list_type;
+
+  /** Give page iterator access to our internals. */  
+  friend class page_iterator;
+
+  /** Give page cursor access to our internals. */
+  friend class page_cursor;
 
 private:
   //==----------------------------------------------------------==//
@@ -396,6 +406,13 @@ public:
   template<typename T>
   std::tuple<bool, size_type> fetch_object(object_id_type object_id, T& data);
 
+
+  //==----------------------------------------------------------==//
+  //                    STL
+  //==----------------------------------------------------------==//
+
+  
+
 };
 
 /**
@@ -573,7 +590,7 @@ page::fetch_object(object_id_type object_id, T& data)
   return std::make_tuple(true, _fetch_object(ap, data));
 }
 
-}
-}
+} // end namespace cell
+} // end namespace lattice
 
 #endif //__LATTICE_CELL_STORE_H__
