@@ -37,22 +37,24 @@ static int cmp(const T* value, const T* buffer)
          (*value) > (*buffer) ? 1 : -1;
 }
 
-/*template<>
-static int cmp<>(const std::string &value, std::uint8_t *buffer)
-{
-  std::uint32_t size1 = input.size();
-  std::uint32_t size2 = *static_cast<std::uint32_t>(
-      static_cast<void*>(buffer)
-      );
+template<typename T>
+static int cmp(const T& value, const std::uint8_t *buffer) {
+  return cmp(value, static_cast<const T*>(static_cast<const void*>(buffer)));
+}
 
-  // Step forward to the strings.
-  buffer += sizeof(size1);
+template<>
+int cmp<>(const std::string &value, const std::uint8_t *buffer)
+{
+  std::uint32_t size1 = value.size();
+  std::uint32_t size2 = *static_cast<const std::uint32_t *>(
+      static_cast<const void*>(buffer)
+      );
 
   // Find the minimum size.
   auto size = std::min(size1, size2);
 
   // Compare
-  auto r = memcmp(buffer, value.c_str(), size);
+  auto r = memcmp(value.c_str(), buffer+sizeof(size2), size);
 
   // If the strings compared equivalent, and they
   // are not the same size, make sure that we figure
@@ -62,8 +64,9 @@ static int cmp<>(const std::string &value, std::uint8_t *buffer)
       return size1 > size2 ? 1 : -1;
     }
 
-  return r;
-}*/
+  return r == 0 ? 0 :
+         r >  0 ? 1 : -1;
+}
 
 template<>
 int cmp<>(const std::string& value, std::istream& buffer)
