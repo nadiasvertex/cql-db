@@ -17,7 +17,6 @@ TEST(ScalarPredicateTest, CanCreate)
       );
 }
 
-
 TEST(ScalarPredicateTest, CanCompare)
 {
   lattice::cell::page page;

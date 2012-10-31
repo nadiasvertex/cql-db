@@ -32,7 +32,7 @@ namespace lattice
 		virtual bool contains(page_cursor& cursor);
 	 };
 
-  } // namespace cell
+} // namespace cell
 } // namespace lattice
 
 #endif // __LATTICE_CELL_LIST_PREDICATE_H__
