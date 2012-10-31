@@ -126,17 +126,17 @@ public:
    * @param cursor: The page cursor to compare with.
    *
    */
-  int cmp(page_cursor& cursor);
+  int cmp(page_cursor& cursor) const;
 
   /**
    * Establishes data equivalency for data values.
    */
-  bool operator==(data_value o);
+  bool operator==(data_value o) const;
 
   /**
    *  Establishes less than ordering for data values.
    */
-  bool operator<(data_value o);
+  bool operator<(data_value o) const;
 };
 
 } // namespace cell

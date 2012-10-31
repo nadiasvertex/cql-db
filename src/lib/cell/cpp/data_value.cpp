@@ -32,7 +32,7 @@ void data_value::set_value<>(column::data_type t, const std::string& data)
   has_value = true;
 }
 
-bool data_value::operator==(data_value o)
+bool data_value::operator==(data_value o) const
 {
   switch (type)
     {
@@ -58,7 +58,7 @@ bool data_value::operator==(data_value o)
   return false;
 }
 
-bool data_value::operator<(data_value o)
+bool data_value::operator<(data_value o) const
 {
   switch (type)
     {
@@ -84,7 +84,7 @@ bool data_value::operator<(data_value o)
   return false;
 }
 
-int data_value::cmp(page_cursor& cursor)
+int data_value::cmp(page_cursor& cursor) const
 {
   switch (type)
     {
