@@ -207,12 +207,35 @@ data_value::read(std::uint8_t* buffer)
     }
 }
 
-std::size_t write(std::ostream& buffer)
+template<typename T>
+static std::size_t _write(const T& value, std::ostream& buffer)
+{
+  char* ptr = static_cast<char*>(static_cast<void*>(buffer));
+  buffer.write(ptr, sizeof(value));
+
+  return sizeof(value);
+}
+
+template<>
+std::size_t _write<>(const std::string& value, std::ostream& buffer)
+{
+  std::uint32_t size = value.size();
+  _write(size, buffer);
+
+  buffer.write(value.c_str(), size);
+
+  return size + sizeof(size);
+}
+
+
+std::size_t 
+data_value::write(std::ostream& buffer)
 {
 
 }
 
-std::size_t read(std::istream& buffer)
+std::size_t 
+data_value::read(std::istream& buffer)
 {
 
 }
