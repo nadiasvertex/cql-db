@@ -17,9 +17,14 @@ TEST(ListPredicateTest, CanCreate)
 }
 
 
-TEST(ListPredicateTest, CanCompare)
+TEST(ListPredicateTest, ContainsWorks)
 {
-  lattice::cell::page page;
+  auto def = new lattice::cell::column {
+		  lattice::cell::column::data_type::integer,
+		  "test_col", 4, 0, false
+  };
+
+  lattice::cell::page page(def);
 
   int a = 5;
 

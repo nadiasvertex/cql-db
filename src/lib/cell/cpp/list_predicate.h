@@ -36,16 +36,8 @@ namespace lattice
 
 		virtual bool contains(page_cursor& cursor)
 		{
-
-
-		  /*for(auto p : pred_list)
-			 {
-			 if (p.cmp(cursor) == 0) {
-			 return true;
-			 }
-			 }*/
-
-		  return false;
+		  auto value = cursor.get_value();
+		  return pred_list.find(value) != pred_list.end();
 		}
 	 };
 

@@ -9,6 +9,8 @@ namespace lattice
 namespace cell
 {
 
+  class data_value;
+
 class page_cursor
 {
   /**
@@ -112,6 +114,11 @@ public:
 
     return _fetch_object(atom, data);
   }
+
+  /**
+   * Read a data_value from the cursor.
+   */
+  data_value get_value();
 
   /**
    * Indicates whether the data pointed to by the cursor
