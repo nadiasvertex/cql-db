@@ -2,7 +2,7 @@
 #include <memory>
 #include <sstream>
 
-#include <cell/cpp/predicate_solver.h>
+#include <cell/cpp/scalar_predicate.h>
 
 #include <gtest/gtest.h>
 
