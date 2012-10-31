@@ -2,6 +2,7 @@
 #define __LATTICE_CELL_SCALAR_DATA_VALUE_H__
 
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -42,6 +43,11 @@ public:
   {
   }
 
+  data_value(column::data_type t) :
+      type(t), has_value(false)
+  {
+  }
+
   /**
    * Cleans up resources, like string pointers.
    */
@@ -56,7 +62,62 @@ public:
    *              data types.
    */
   template<typename T>
-  void set_value(column::data_type t, const T& data);
+  void set_value(column::data_type t, const T& data)
+  {
+    type = t;
+    switch (type)
+      {
+      case column::data_type::smallint:
+        value.i16 = data;
+        break;
+
+      case column::data_type::integer:
+        value.i32 = data;
+        break;
+
+      case column::data_type::bigint:
+        value.i32 = data;
+        break;
+
+      case column::data_type::real:
+        value.f32 = data;
+        break;
+
+      case column::data_type::double_precision:
+        value.f64 = data;
+        break;
+      }
+
+    has_value = true;
+  }
+
+  /**
+   * Write this data value into a buffer.
+   *
+   * @param buffer: The buffer to write into.
+   */
+  std::size_t write(std::uint8_t* buffer);
+
+  /**
+   * Read this data value from a buffer.
+   *
+   * @param buffer: The buffer to read from.
+   */
+  std::size_t read(std::uint8_t* buffer);
+
+  /**
+   * Write this data value into a buffer.
+   *
+   * @param buffer: The buffer to write into.
+   */
+  std::size_t write(std::ostream& buffer);
+
+  /**
+   * Read this data value from a buffer.
+   *
+   * @param buffer: The buffer to read from.
+   */
+  std::size_t read(std::istream& buffer);
 
   /**
    * Compares the data value with the current value
