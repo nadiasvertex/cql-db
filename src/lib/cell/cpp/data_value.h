@@ -139,6 +139,10 @@ public:
   bool operator<(const data_value& o) const;
 };
 
+template<>
+  void data_value::set_value<>(column::data_type t, const std::string& data);
+
+
 } // namespace cell
 } // namespace lattice
 

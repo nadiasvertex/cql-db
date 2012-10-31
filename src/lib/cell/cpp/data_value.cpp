@@ -6,6 +6,25 @@ namespace lattice
 namespace cell
 {
 
+/**
+ * Provides a way to set a bit on
+ * exit from a scope.
+ */
+class set_on_exit
+{
+  bool &v;
+  public:
+  set_on_exit(bool&_v) :
+      v(_v)
+  {
+  }
+
+  ~set_on_exit()
+  {
+    v = true;
+  }
+};
+
 data_value::~data_value()
 {
   if (type == column::data_type::varchar)
@@ -17,6 +36,8 @@ data_value::~data_value()
 template<>
 void data_value::set_value<>(column::data_type t, const std::string& data)
 {
+  set_on_exit f(has_value);
+
   type = t;
   switch (type)
     {
@@ -28,12 +49,10 @@ void data_value::set_value<>(column::data_type t, const std::string& data)
       value.s = new std::string(data);
       break;
     }
-
-  has_value = true;
 }
 
 bool data_value::operator==(const data_value& o) const
-{
+    {
   switch (type)
     {
     case column::data_type::smallint:
@@ -59,7 +78,7 @@ bool data_value::operator==(const data_value& o) const
 }
 
 bool data_value::operator<(const data_value& o) const
-{
+    {
   switch (type)
     {
     case column::data_type::smallint:
@@ -85,7 +104,7 @@ bool data_value::operator<(const data_value& o) const
 }
 
 int data_value::cmp(page_cursor& cursor) const
-{
+    {
   switch (type)
     {
     case column::data_type::smallint:
@@ -134,7 +153,7 @@ std::size_t _write<>(const std::string& value, std::uint8_t* buffer)
   return size + sizeof(size);
 }
 
-std::size_t 
+std::size_t
 data_value::write(std::uint8_t* buffer)
 {
   switch (type)
@@ -175,17 +194,18 @@ std::size_t _read<>(std::string& value, std::uint8_t* buffer)
   _read(size, buffer);
 
   value.assign(static_cast<char*>(
-			static_cast<void*>(buffer + sizeof(size))
-											 ), size);
+      static_cast<void*>(buffer + sizeof(size))
+      ), size);
 
   return size + sizeof(size);
 }
 
-
-std::size_t 
+std::size_t
 data_value::read(std::uint8_t* buffer)
 {
-    switch (type)
+  set_on_exit f(has_value);
+
+  switch (type)
     {
     case column::data_type::smallint:
       return _read(value.i16, buffer);
@@ -203,6 +223,10 @@ data_value::read(std::uint8_t* buffer)
       return _read(value.f64, buffer);
 
     case column::data_type::varchar:
+      if (!has_value)
+        {
+          value.s = new std::string();
+        }
       return _read(*value.s, buffer);
     }
 }
@@ -227,8 +251,7 @@ std::size_t _write<>(const std::string& value, std::ostream& buffer)
   return size + sizeof(size);
 }
 
-
-std::size_t 
+std::size_t
 data_value::write(std::ostream& buffer)
 {
   switch (type)
@@ -269,17 +292,16 @@ std::size_t _read<>(std::string& value, std::istream& buffer)
   _read(size, buffer);
 
   char _buffer[size];
-  buffer.read(_buffer, size);  
-  value.assign(_buffer,size);
+  buffer.read(_buffer, size);
+  value.assign(_buffer, size);
 
   return size + sizeof(size);
 }
 
-
-std::size_t 
+std::size_t
 data_value::read(std::istream& buffer)
 {
-    switch (type)
+  switch (type)
     {
     case column::data_type::smallint:
       return _read(value.i16, buffer);

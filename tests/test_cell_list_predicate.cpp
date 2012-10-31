@@ -16,7 +16,6 @@ TEST(ListPredicateTest, CanCreate)
       );
 }
 
-
 TEST(ListPredicateTest, ContainsWorks)
 {
   auto def = new lattice::cell::column {
