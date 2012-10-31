@@ -131,12 +131,12 @@ public:
   /**
    * Establishes data equivalency for data values.
    */
-  bool operator==(data_value o) const;
+  bool operator==(const data_value& o) const;
 
   /**
    *  Establishes less than ordering for data values.
    */
-  bool operator<(data_value o) const;
+  bool operator<(const data_value& o) const;
 };
 
 } // namespace cell
