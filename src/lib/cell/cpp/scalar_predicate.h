@@ -102,19 +102,14 @@ public:
         break;
       }
   }
+
+  virtual bool contains(page_cursor& cursor) {
+    return false;
+  }
 };
 
 template<>
-void scalar_predicate::set_value<>(column::data_type t, const std::string& data)
-{
-  type = t;
-  switch (type)
-    {
-    case column::data_type::varchar:
-      value.s = new std::string(data);
-      break;
-    }
-}
+void scalar_predicate::set_value<>(column::data_type t, const std::string& data);
 
 } // namespace cell
 } // namespace lattice

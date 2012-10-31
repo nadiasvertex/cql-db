@@ -16,6 +16,7 @@ namespace lattice
 		{
 		public:
 			virtual int cmp(page_cursor& cursor)=0;
+			virtual bool contains(page_cursor& cursor)=0;
 		};
 
    } // namespace cell
