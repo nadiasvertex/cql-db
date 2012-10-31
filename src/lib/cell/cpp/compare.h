@@ -38,6 +38,13 @@ static int cmp(const T* value, const T* buffer)
 }
 
 template<typename T>
+static int cmp(const T& value1, const T& value2)
+{
+  return (value1) == (value2) ? 0 :
+         (value1) >  (value2) ? 1 : -1;
+}
+
+template<typename T>
 static int cmp(const T& value, const std::uint8_t *buffer) {
   return cmp(value, static_cast<const T*>(static_cast<const void*>(buffer)));
 }

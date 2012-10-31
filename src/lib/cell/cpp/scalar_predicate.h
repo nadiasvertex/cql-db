@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <vector>
 
+#include <cell/cpp/data_value.h>
 #include <cell/cpp/predicate_solver.h>
 
 namespace lattice
@@ -15,101 +15,29 @@ namespace cell
 
 class scalar_predicate: public predicate
 {
-  /**
-   * The type of data to request.
-   */
-  column::data_type type;
-
-  union
-  {
-    std::int16_t i16;
-    std::int32_t i32;
-    std::int64_t i64;
-
-    float f32;
-    double f64;
-
-    std::string *s;
-
-  } value;
+  data_value value;
 
 public:
   scalar_predicate()
   {
   }
-  virtual ~scalar_predicate()
-  {
-    if (type == column::data_type::varchar)
-      {
-        delete value.s;
-      }
-  }
 
-  template<typename T>
-  void set_value(column::data_type t, const T& data)
-  {
-    type = t;
-    switch (type)
-      {
-      case column::data_type::smallint:
-        value.i16 = data;
-        break;
-
-      case column::data_type::integer:
-        value.i32 = data;
-        break;
-
-      case column::data_type::bigint:
-        value.i32 = data;
-        break;
-
-      case column::data_type::real:
-        value.f32 = data;
-        break;
-
-      case column::data_type::double_precision:
-        value.f64 = data;
-        break;
-      }
+  template <typename T>
+  void set_value(column::data_type t, const T& v) {
+    value.set_value(t, v);
   }
 
   virtual int cmp(page_cursor& cursor)
   {
-    switch (type)
-      {
-      case column::data_type::smallint:
-        return cursor.cmp(value.i16);
-        break;
-
-      case column::data_type::integer:
-        return cursor.cmp(value.i32);
-        break;
-
-      case column::data_type::bigint:
-        return cursor.cmp(value.i32);
-        break;
-
-      case column::data_type::real:
-        return cursor.cmp(value.f32);
-        break;
-
-      case column::data_type::double_precision:
-        return cursor.cmp(value.f64);
-        break;
-
-      case column::data_type::varchar:
-        return cursor.cmp(*value.s);
-        break;
-      }
+    return value.cmp(cursor);
   }
 
-  virtual bool contains(page_cursor& cursor) {
+  virtual bool contains(page_cursor& cursor)
+  {
     return false;
   }
 };
 
-template<>
-void scalar_predicate::set_value<>(column::data_type t, const std::string& data);
 
 } // namespace cell
 } // namespace lattice
