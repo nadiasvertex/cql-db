@@ -21,7 +21,6 @@ namespace cell
 {
 
 class page_cursor;
-class page_iterator;
 
 /**
  * A page contains data for a single column.
@@ -128,9 +127,6 @@ public:
 
   /** A list of atom handles. */
   typedef std::vector<atom_handle_type> atom_list_type;
-
-  /** Give page iterator access to our internals. */  
-  friend class page_iterator;
 
   /** Give page cursor access to our internals. */
   friend class page_cursor;

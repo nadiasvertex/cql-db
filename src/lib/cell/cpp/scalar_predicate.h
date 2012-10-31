@@ -6,7 +6,7 @@
 #include <string>
 
 #include <cell/cpp/data_value.h>
-#include <cell/cpp/predicate_solver.h>
+#include <cell/cpp/predicate.h>
 
 namespace lattice
 {

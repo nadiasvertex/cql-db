@@ -55,6 +55,11 @@ private:
   column_data_type column_data;
 
   /**
+   * The column name to column index mapping.
+   */
+  std::unordered_map<std::string, unsigned int> column_names;
+
+  /**
    * The number of columns in the table.
    */
   unsigned int number_of_columns;
@@ -64,9 +69,10 @@ public:
   table(unsigned int _number_of_columns) :
       number_of_columns(_number_of_columns)
   {
-    for(auto i=0; i<number_of_columns; ++i) {
+    for (auto i = 0; i < number_of_columns; ++i)
+      {
         column_data.push_back(page_handle_type(nullptr));
-    }
+      }
   }
 
   /**
@@ -79,6 +85,24 @@ public:
   }
 
   /**
+   * Get the column id by name.
+   *
+   * @param name: The name of the column.
+   */
+  unsigned int get_column_id(const std::string& name)
+  {
+    auto pos = column_names.find(name);
+    if (pos != column_names.end())
+      {
+        // Need to throw an exception here, because the
+        // column name does not exist.
+        return 0;
+      }
+
+    return pos->second;
+  }
+
+  /**
    * Set the column definition for the given column.
    *
    * @param column_number: The column to set.
@@ -88,7 +112,7 @@ public:
    */
   bool set_column_definition(unsigned int column_number, column* col)
   {
-    if (column_number >= number_of_columns)
+    if (column_number >= number_of_columns || col == nullptr)
       {
         return false;
       }
@@ -104,8 +128,16 @@ public:
         return false;
       }
 
+    // Update the name map.
+    if (column_names.find(col->name) != column_names.end())
+      {
+        // The column name already exists.
+        return false;
+      }
+
     // Create a new column and set the definition.
     column_data[column_number] = page_handle_type(new page(col));
+    column_names[col->name] = column_number;
 
     return true;
   }
@@ -161,7 +193,7 @@ public:
    * @param buffer_size: The size in bytes of the data buffer.
    */
   bool to_binary(column_present_type present, text_tuple_type tuple,
-                 std::uint8_t* buffer, std::size_t buffer_size);
+      std::uint8_t* buffer, std::size_t buffer_size);
 
 };
 

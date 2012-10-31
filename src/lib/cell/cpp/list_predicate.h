@@ -3,7 +3,7 @@
 
 #include <set>
 
-#include <cell/cpp/predicate_solver.h>
+#include <cell/cpp/predicate.h>
 #include <cell/cpp/data_value.h>
 
 namespace lattice
