@@ -210,7 +210,7 @@ data_value::read(std::uint8_t* buffer)
 template<typename T>
 static std::size_t _write(const T& value, std::ostream& buffer)
 {
-  char* ptr = static_cast<char*>(static_cast<void*>(buffer));
+  const char* ptr = static_cast<const char*>(static_cast<const void*>(&value));
   buffer.write(ptr, sizeof(value));
 
   return sizeof(value);
@@ -231,13 +231,74 @@ std::size_t _write<>(const std::string& value, std::ostream& buffer)
 std::size_t 
 data_value::write(std::ostream& buffer)
 {
+  switch (type)
+    {
+    case column::data_type::smallint:
+      return _write(value.i16, buffer);
 
+    case column::data_type::integer:
+      return _write(value.i32, buffer);
+
+    case column::data_type::bigint:
+      return _write(value.i32, buffer);
+
+    case column::data_type::real:
+      return _write(value.f32, buffer);
+
+    case column::data_type::double_precision:
+      return _write(value.f64, buffer);
+
+    case column::data_type::varchar:
+      return _write(*value.s, buffer);
+    }
 }
+
+template<typename T>
+static std::size_t _read(T& value, std::istream& buffer)
+{
+  char* ptr = static_cast<char*>(static_cast<void*>(&value));
+  buffer.read(ptr, sizeof(value));
+
+  return sizeof(value);
+}
+
+template<>
+std::size_t _read<>(std::string& value, std::istream& buffer)
+{
+  std::uint32_t size = value.size();
+  _read(size, buffer);
+
+  char _buffer[size];
+  buffer.read(_buffer, size);  
+  value.assign(_buffer,size);
+
+  return size + sizeof(size);
+}
+
 
 std::size_t 
 data_value::read(std::istream& buffer)
 {
+    switch (type)
+    {
+    case column::data_type::smallint:
+      return _read(value.i16, buffer);
 
+    case column::data_type::integer:
+      return _read(value.i32, buffer);
+
+    case column::data_type::bigint:
+      return _read(value.i32, buffer);
+
+    case column::data_type::real:
+      return _read(value.f32, buffer);
+
+    case column::data_type::double_precision:
+      return _read(value.f64, buffer);
+
+    case column::data_type::varchar:
+      return _read(*value.s, buffer);
+    }
 }
 
 } // namespace cell
