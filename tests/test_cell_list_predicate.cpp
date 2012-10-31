@@ -3,16 +3,19 @@
 #include <sstream>
 
 #include <cell/cpp/list_predicate.h>
+#include <cell/cpp/page_cursor.h>
 
 #include <gtest/gtest.h>
 
 TEST(ListPredicateTest, CanCreate)
 {
- std::unique_ptr<lattice::cell::list_predicate> sp;
+  using namespace lattice::cell;
+
+ std::unique_ptr<list_predicate> sp;
 
   ASSERT_NO_THROW(
-      sp = std::unique_ptr<lattice::cell::list_predicate>(
-          new lattice::cell::list_predicate())
+      sp = std::unique_ptr<list_predicate>(
+          new list_predicate())
       );
 }
 

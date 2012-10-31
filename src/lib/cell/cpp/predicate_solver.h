@@ -1,16 +1,12 @@
 #ifndef __LATTICE_CELL_PREDICATE_H__
 #define __LATTICE_CELL_PREDICATE_H__
 
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
-#include <cell/cpp/page_cursor.h>
-
 namespace lattice
 {
 	namespace cell
    {
+
+	  class page_cursor;
 
 		class predicate
 		{

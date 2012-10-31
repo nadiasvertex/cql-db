@@ -2,6 +2,7 @@
 #include <memory>
 #include <sstream>
 
+#include <cell/cpp/page_cursor.h>
 #include <cell/cpp/scalar_predicate.h>
 
 #include <gtest/gtest.h>
