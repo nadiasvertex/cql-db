@@ -1,0 +1,79 @@
+#include <memory>
+#include <cell/cpp/query_parser.h>
+#include <gtest/gtest.h>
+
+class QueryParserTest: public ::testing::Test
+{
+public:
+  lattice::cell::database *db;
+
+  virtual void SetUp()
+  {
+    using namespace lattice::cell;
+
+    db = new database();
+    db->create_table("test_table_1",
+          {
+          new column
+                {
+                column::data_type::integer, "id", 4
+                },
+              new column
+                {
+                column::data_type::bigint, "c1", 8
+                },
+              new column
+                {
+                column::data_type::varchar, "c2", 0
+                }
+          });
+  }
+
+  virtual void TearDown()
+  {
+    delete db;
+  }
+
+};
+
+TEST_F(QueryParserTest, CanCreate)
+{
+  using namespace lattice::cell;
+
+  std::unique_ptr<query_parser> q;
+  ASSERT_NO_THROW(q =std::unique_ptr<query_parser>(
+      new query_parser(*db, std::string("test"))
+      )
+      );
+}
+
+TEST_F(QueryParserTest, CanParseSelectStar)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select *");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseSelectOne)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 1");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseSelectOneCommaTwo)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 1, 2");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+

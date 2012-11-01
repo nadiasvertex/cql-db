@@ -22,7 +22,7 @@ struct expression;
 struct select;
 
 struct sql_string :
-		enclose< alnum, one<'\'' > {};
+		seq< one<'\''>, star< any >, one<'\''> > {};
 
 struct numeric :
 		plus< digit > {};
@@ -38,43 +38,44 @@ struct column_name :
 
 struct term :
 		sor<
+		   value,
 			column_name,
-			seq< pad<one< '(', space >>, expression, pad<one< ')', space >> >
+			seq< pad< one< '(' >, space >, expression, pad< one< ')'>, space > >
 		 > {};
 
 struct factor :
-		seq< term, star< seq< one<'*', '/', '%'>, term > > {};
+		seq< term, star<  seq< one<'*', '/', '%'>, term > > > {};
 
 struct summand :
-		seq< factor, star< seq< one<'+', '-'>, factor > > {};
+		seq< factor, star< seq< one<'+', '-'>, factor > > > {};
 
 struct operand :
-		list< summand, one< '||' > > {};
+		list< summand, string< '|', '|' > > {};
 
 struct condition_rhs :
 		sor<
 			seq< string<'i', 's'>, opt< string<'n', 'o', 't'> >, string<'n', 'u', 'l', 'l'> >,
 			seq< string<'b', 'e', 't', 'w', 'e', 'e', 'n'>, operand, string<'a', 'n', 'd'>, operand >,
-			seq< string<'i', 'n'>, pad<one< '(', space >>, list<expression, one<','> >, pad< one < ')', space > > >
+			seq< string<'i', 'n'>, pad<one< '(' > , space >, list<expression, one<','> >, pad< one < ')'>, space > >
 		> {};
 
 struct condition :
 		sor< seq< operand, opt< condition_rhs > >,
 		     seq< string< 'n', 'o', 't' >, condition >,
-		     seq< string< 'e', 'x', 'i', 's', 't', 's' >, pad<one< '(' >>, select, pad< one< ')' > > >
+		     seq< string< 'e', 'x', 'i', 's', 't', 's' >, pad<one< '(' >, space >, select, pad< one< ')' >, space > >
 		> {};
 
 struct and_condition :
-		seq< condition, string<'a', 'n', 'd'>, condition> {};
+		seq< condition, opt< string<'a', 'n', 'd'>, condition > > {};
 
 struct or_condition :
-		seq< condition, string<'o', 'r'>, condition> {};
+		seq< condition, opt< string<'o', 'r'>, condition > > {};
 
 struct expression :
 		sor< and_condition, or_condition> {};
 
 struct column_alias :
-		seq< string<'a', 's'>, column_name > {};
+		seq< pad< string<'a', 's'>, space> , column_name > {};
 
 struct from :
 		seq< string< 'f', 'r', 'o', 'm'> > {};
@@ -86,8 +87,9 @@ struct select_expression :
 		> {};
 
 struct select :
-		seq< string< 's', 'e', 'l', 'e', 'c', 't'>, list< select_expression, one<','> > > {};
-
+		seq< pad< string< 's', 'e', 'l', 'e', 'c', 't'>, space >,
+			  list<select_expression, pad< one<','>, space > >
+		> {};
 
 } //end parser namespace
 
@@ -108,6 +110,7 @@ public:
   bool parse()
   {
 	  pegtl::basic_parse_string< recognizer::select >(query_data);
+	  return true;
   }
 
 };
