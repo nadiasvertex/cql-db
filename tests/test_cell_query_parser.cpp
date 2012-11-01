@@ -77,3 +77,37 @@ TEST_F(QueryParserTest, CanParseSelectOneCommaTwo)
   EXPECT_TRUE(qp.parse());
 }
 
+TEST_F(QueryParserTest, CanParseSelectColumns)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select c1, c2");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseSelectColumnAndNumber)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 1, c2");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseSelectString)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 'test value'");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+
+
+
+

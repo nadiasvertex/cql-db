@@ -22,7 +22,7 @@ struct expression;
 struct select;
 
 struct sql_string :
-		seq< one<'\''>, star< any >, one<'\''> > {};
+		seq< one<'\''>, star< not_one<'\'' >  >, one<'\''> > {};
 
 struct numeric :
 		plus< digit > {};
