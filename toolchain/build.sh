@@ -14,6 +14,7 @@ make && make install
 cd ..
 
 cp -f zmqcpp/zmq.hpp $BINDIR/include
+cp -fr pegtl-0.31/include/* $BINDIR/include
 
 # Cleanup
 hg clean -X toolchain/tools/*
