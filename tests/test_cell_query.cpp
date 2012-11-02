@@ -46,7 +46,7 @@ TEST_F(QueryTest, CanCreate)
 
   std::unique_ptr<query> q;
   ASSERT_NO_THROW(q =std::unique_ptr<query>(
-      new query(*db)
+      new query(*db, "")
       )
       );
 }
@@ -55,6 +55,6 @@ TEST_F(QueryTest, CanSelect)
 {
   using namespace lattice::cell;
 
-  query q(*db);
+  query q(*db, "select 1");
 }
 

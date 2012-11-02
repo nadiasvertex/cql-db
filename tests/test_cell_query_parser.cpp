@@ -152,6 +152,8 @@ TEST_F(QueryParserTest, CanParseAddition)
   // Expect one select expression.
   auto& se = qp.get_query().get_select_expressions();
   EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::OP_ADD, se[0]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseSubtraction)
@@ -166,6 +168,8 @@ TEST_F(QueryParserTest, CanParseSubtraction)
   // Expect one select expression.
   auto& se = qp.get_query().get_select_expressions();
   EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::OP_SUB, se[0]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseMultiplication)
@@ -180,6 +184,8 @@ TEST_F(QueryParserTest, CanParseMultiplication)
   // Expect one select expression.
   auto& se = qp.get_query().get_select_expressions();
   EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::OP_MUL, se[0]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseDivision)
@@ -194,6 +200,8 @@ TEST_F(QueryParserTest, CanParseDivision)
   // Expect one select expression.
   auto& se = qp.get_query().get_select_expressions();
   EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::OP_DIV, se[0]->get_type());
 }
 
 

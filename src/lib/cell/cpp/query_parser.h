@@ -23,10 +23,19 @@ struct sql_string :
 		seq< one<'\''>, star< not_one<'\'' >  >, one<'\''> > {};
 
 struct numeric :
-		plus< digit > {};
+		pad< plus< digit >, space> {};
 
 struct null_value :
-		string<'n', 'u', 'l', 'l'> {};
+		pad< string<'n', 'u', 'l', 'l'>, space> {};
+
+struct is_kw :
+		pad< string<'i', 's'>, space> {};
+
+struct not_kw :
+		pad< string<'n', 'o', 't'>, space> {};
+
+struct between_kw :
+	   pad< string<'b', 'e', 't', 'w', 'e', 'e', 'n'>, space> {};
 
 struct value :
 		sor<
@@ -55,8 +64,8 @@ struct operand :
 
 struct condition_rhs :
 		sor<
-			seq< string<'i', 's'>, opt< string<'n', 'o', 't'> >, null_value >,
-			seq< string<'b', 'e', 't', 'w', 'e', 'e', 'n'>, operand, string<'a', 'n', 'd'>, operand >,
+			seq< is_kw, opt< not_kw >, null_value >,
+			seq< between_kw, operand, string<'a', 'n', 'd'>, operand >,
 			seq< string<'i', 'n'>, pad<one< '(' > , space >, list<expression, one<','> >, pad< one < ')'>, space > >
 		> {};
 

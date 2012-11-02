@@ -57,12 +57,14 @@ public:
 	{
 	}
 
+	virtual ~node() {};
+
 	/**
 	 * Provides the type of the node.
 	 */
 	node_type get_type()
 	{
-	return type;
+		return type;
 	}
 };
 
@@ -82,6 +84,24 @@ public:
 			node(_type), left(_left), right(_right)
 	{
 	}
+
+	virtual ~binop() {}
+
+	/**
+	 * Get the left node.
+	 */
+	node* get_left()
+	{
+		return left.get();
+	}
+
+	/**
+	 * Get the right node.
+	 */
+	node* get_right()
+		{
+			return right.get();
+		}
 };
 
 /**
@@ -95,6 +115,8 @@ public:
 			node(node::node_type::LITERAL), value(v)
 	{
 	}
+
+	virtual ~literal() {}
 };
 
 /**
@@ -108,6 +130,8 @@ public:
 			node(node::node_type::COLUMN_REF), name(n)
 	{
 	}
+
+	virtual ~column_ref() {}
 };
 
 /**

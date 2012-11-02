@@ -17,131 +17,167 @@ class page_cursor;
 
 class data_value
 {
-  /**
-   * The type of data to request.
-   */
-  column::data_type type;
+	/**
+	 * The type of data to request.
+	 */
+	column::data_type type;
 
-  bool has_value;
+	bool has_value;
 
-  union
-  {
-    std::int16_t i16;
-    std::int32_t i32;
-    std::int64_t i64;
+	union
+	{
+		std::int16_t i16;
+		std::int32_t i32;
+		std::int64_t i64;
 
-    float f32;
-    double f64;
+		float f32;
+		double f64;
 
-    std::string *s;
+		std::string *s;
 
-  } value;
+	} value;
 
 public:
-  data_value() :
-      has_value(false)
-  {
-  }
+	data_value() :
+			has_value(false)
+	{
+	}
 
-  data_value(column::data_type t) :
-      type(t), has_value(false)
-  {
-  }
+	data_value(column::data_type t) :
+			type(t), has_value(false)
+	{
+	}
 
-  /**
-   * Cleans up resources, like string pointers.
-   */
-  ~data_value();
+	/**
+	 * Cleans up resources, like string pointers.
+	 */
+	~data_value();
 
-  /**
-   * Set the value of the data contained.
-   *
-   * @param t: The type of data being set.
-   * @param data: The data to set. This will be converted if it
-   *              is reasonably close to C++ conversion rules for
-   *              data types.
-   */
-  template<typename T>
-  void set_value(column::data_type t, const T& data)
-  {
-    type = t;
-    switch (type)
-      {
-      case column::data_type::smallint:
-        value.i16 = data;
-        break;
+	/**
+	 * Set the value of the data contained.
+	 *
+	 * @param t: The type of data being set.
+	 * @param data: The data to set. This will be converted if it
+	 *              is reasonably close to C++ conversion rules for
+	 *              data types.
+	 */
+	template<typename T>
+	void set_value(column::data_type t, const T& data)
+	{
+	type = t;
+	switch (type)
+		{
+	case column::data_type::smallint:
+		value.i16 = data;
+		break;
 
-      case column::data_type::integer:
-        value.i32 = data;
-        break;
+	case column::data_type::integer:
+		value.i32 = data;
+		break;
 
-      case column::data_type::bigint:
-        value.i32 = data;
-        break;
+	case column::data_type::bigint:
+		value.i32 = data;
+		break;
 
-      case column::data_type::real:
-        value.f32 = data;
-        break;
+	case column::data_type::real:
+		value.f32 = data;
+		break;
 
-      case column::data_type::double_precision:
-        value.f64 = data;
-        break;
-      }
+	case column::data_type::double_precision:
+		value.f64 = data;
+		break;
+		}
 
-    has_value = true;
-  }
+	has_value = true;
+	}
 
-  /**
-   * Write this data value into a buffer.
-   *
-   * @param buffer: The buffer to write into.
-   */
-  std::size_t write(std::uint8_t* buffer);
+	/**
+	 * Return this value as a smallint.
+	 */
+	data_value as_smallint() const;
 
-  /**
-   * Read this data value from a buffer.
-   *
-   * @param buffer: The buffer to read from.
-   */
-  std::size_t read(std::uint8_t* buffer);
+	/**
+	 * Return this value as an integer.
+	 */
+	data_value as_integer() const;
 
-  /**
-   * Write this data value into a buffer.
-   *
-   * @param buffer: The buffer to write into.
-   */
-  std::size_t write(std::ostream& buffer);
+	/**
+	 * Return this value as a bigint.
+	 */
+	data_value as_bigint() const;
 
-  /**
-   * Read this data value from a buffer.
-   *
-   * @param buffer: The buffer to read from.
-   */
-  std::size_t read(std::istream& buffer);
+	/**
+	 * Return this value as a real.
+	 */
+	data_value as_real() const;
 
-  /**
-   * Compares the data value with the current value
-   * pointed to by the cursor.
-   *
-   * @param cursor: The page cursor to compare with.
-   *
-   */
-  int cmp(page_cursor& cursor) const;
+	/**
+	 * Return this value as a double precision real.
+	 */
+	data_value as_double_precision() const;
 
-  /**
-   * Establishes data equivalency for data values.
-   */
-  bool operator==(const data_value& o) const;
+	/**
+	 * Return this value as a string.
+	 */
+	data_value as_string() const;
 
-  /**
-   *  Establishes less than ordering for data values.
-   */
-  bool operator<(const data_value& o) const;
+	/**
+	 * Write this data value into a buffer.
+	 *
+	 * @param buffer: The buffer to write into.
+	 */
+	std::size_t write(std::uint8_t* buffer);
+
+	/**
+	 * Read this data value from a buffer.
+	 *
+	 * @param buffer: The buffer to read from.
+	 */
+	std::size_t read(std::uint8_t* buffer);
+
+	/**
+	 * Write this data value into a buffer.
+	 *
+	 * @param buffer: The buffer to write into.
+	 */
+	std::size_t write(std::ostream& buffer);
+
+	/**
+	 * Read this data value from a buffer.
+	 *
+	 * @param buffer: The buffer to read from.
+	 */
+	std::size_t read(std::istream& buffer);
+
+	/**
+	 * Compares the data value with the current value
+	 * pointed to by the cursor.
+	 *
+	 * @param cursor: The page cursor to compare with.
+	 *
+	 */
+	int cmp(page_cursor& cursor) const;
+
+	/**
+	 * Establishes data equivalency for data values.
+	 */
+	bool operator==(const data_value& o) const;
+
+	/**
+	 *  Establishes less than ordering for data values.
+	 */
+	bool operator<(const data_value& o) const;
+
+	friend data_value operator+(const data_value& l, const data_value& r);
 };
 
 template<>
-  void data_value::set_value<>(column::data_type t, const std::string& data);
+void data_value::set_value<>(column::data_type t, const std::string& data);
 
+/**
+ * Adds two data values together, if possible.
+ */
+data_value operator+(const data_value& l, const data_value& r);
 
 } // namespace cell
 } // namespace lattice

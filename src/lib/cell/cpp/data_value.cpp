@@ -274,7 +274,7 @@ case column::data_type::integer:
 	return _write(value.i32, buffer);
 
 case column::data_type::bigint:
-	return _write(value.i32, buffer);
+	return _write(value.i64, buffer);
 
 case column::data_type::real:
 	return _write(value.f32, buffer);
@@ -320,7 +320,7 @@ case column::data_type::integer:
 	return _read(value.i32, buffer);
 
 case column::data_type::bigint:
-	return _read(value.i32, buffer);
+	return _read(value.i64, buffer);
 
 case column::data_type::real:
 	return _read(value.f32, buffer);
@@ -331,6 +331,186 @@ case column::data_type::double_precision:
 case column::data_type::varchar:
 	return _read(*value.s, buffer);
 	}
+}
+
+data_value data_value::as_smallint() const
+{
+data_value out(column::data_type::smallint);
+
+switch (type)
+	{
+case column::data_type::smallint:
+	out.value.i16 = value.i16;
+	break;
+
+case column::data_type::integer:
+	out.value.i16 = value.i32;
+	break;
+
+case column::data_type::bigint:
+	out.value.i16 = value.i64;
+	break;
+
+case column::data_type::real:
+	out.value.i16 = static_cast<std::int16_t>(value.f32);
+	break;
+
+case column::data_type::double_precision:
+	out.value.i16 = static_cast<std::int16_t>(value.f64);
+	break;
+	}
+
+return out;
+}
+
+data_value data_value::as_integer() const
+{
+data_value out(column::data_type::integer);
+
+switch (type)
+	{
+case column::data_type::smallint:
+	out.value.i32 = value.i16;
+	break;
+
+case column::data_type::integer:
+	out.value.i32 = value.i32;
+	break;
+
+case column::data_type::bigint:
+	out.value.i32 = value.i64;
+	break;
+
+case column::data_type::real:
+	out.value.i32 = std::int32_t(value.f32);
+	break;
+
+case column::data_type::double_precision:
+	out.value.i32 = std::int32_t(value.f64);
+	break;
+	}
+
+return out;
+}
+
+data_value data_value::as_bigint() const
+{
+data_value out(column::data_type::bigint);
+
+switch (type)
+	{
+case column::data_type::smallint:
+	out.value.i64 = value.i16;
+	break;
+
+case column::data_type::integer:
+	out.value.i64 = value.i32;
+	break;
+
+case column::data_type::bigint:
+	out.value.i64 = value.i64;
+	break;
+
+case column::data_type::real:
+	out.value.i64 = std::int64_t(value.f32);
+	break;
+
+case column::data_type::double_precision:
+	out.value.i64 = std::int64_t(value.f64);
+	break;
+	}
+
+return out;
+}
+
+data_value data_value::as_real() const
+{
+data_value out(column::data_type::real);
+
+switch (type)
+	{
+case column::data_type::smallint:
+	out.value.f32 = float(value.i16);
+	break;
+
+case column::data_type::integer:
+	out.value.f32 = float(value.i32);
+	break;
+
+case column::data_type::bigint:
+	out.value.f32 = float(value.i64);
+	break;
+
+case column::data_type::real:
+	out.value.f32 = float(value.f32);
+	break;
+
+case column::data_type::double_precision:
+	out.value.f32 = float(value.f64);
+	break;
+	}
+
+return out;
+}
+
+data_value data_value::as_double_precision() const
+{
+data_value out(column::data_type::double_precision);
+
+switch (type)
+	{
+case column::data_type::smallint:
+	out.value.f64 = double(value.i16);
+	break;
+
+case column::data_type::integer:
+	out.value.f64 = double(value.i32);
+	break;
+
+case column::data_type::bigint:
+	out.value.f64 = double(value.i64);
+	break;
+
+case column::data_type::real:
+	out.value.f64 = double(value.f32);
+	break;
+
+case column::data_type::double_precision:
+	out.value.f64 = double(value.f64);
+	break;
+	}
+
+return out;
+}
+
+
+data_value operator+(const data_value& l, const data_value& r)
+{
+data_value out;
+
+switch (l.type)
+	{
+case column::data_type::smallint:
+	out.set_value(l.type, l.value.i16 + r.as_smallint().value.i16);
+	break;
+case column::data_type::integer:
+	out.set_value(l.type, l.value.i32 + r.as_integer().value.i32);
+	break;
+case column::data_type::bigint:
+	out.set_value(l.type, l.value.i64 + r.as_bigint().value.i64);
+	break;
+case column::data_type::real:
+	out.set_value(l.type, l.value.f32 + r.as_real().value.i32);
+	break;
+case column::data_type::double_precision:
+	out.set_value(l.type, l.value.f64 + r.as_double_precision().value.f64);
+	break;
+case column::data_type::varchar:
+	//out.set_value(l.type, new std::string(*(l.value.s) + *(r.as_string().value.s)));
+	break;
+	}
+
+return out;
 }
 
 } // namespace cell
