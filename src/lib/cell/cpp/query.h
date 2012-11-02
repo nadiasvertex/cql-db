@@ -39,6 +39,7 @@ public:
 private:
   database& db;
 
+  /** A list of predicates. */
   predicate_group_list_type predicates;
 
 public:

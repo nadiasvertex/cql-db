@@ -8,8 +8,10 @@
 #ifndef __LATTICE_CELL_PARSER_ACTIONS_H__
 #define __LATTICE_CELL_PARSER_ACTIONS_H__
 
+#include <algorithm>
 #include <memory>
 #include <stack>
+#include <vector>
 
 #include <cell/cpp/data_value.h>
 #include <cell/cpp/predicate.h>
@@ -27,6 +29,9 @@ namespace actions
 
 using namespace pegtl;
 
+/**
+ * Base class for nodes.
+ */
 class node
 {
 public:
@@ -51,12 +56,23 @@ public:
 			type(_type)
 	{
 	}
+
+	/**
+	 * Provides the type of the node.
+	 */
+	node_type get_type()
+	{
+	return type;
+	}
 };
 
 typedef std::unique_ptr<node> node_handle_type;
 
 typedef std::stack<node_handle_type> node_list_type;
 
+/**
+ * Binary operation node.
+ */
 class binop: public node
 {
 	node_handle_type left;
@@ -68,6 +84,9 @@ public:
 	}
 };
 
+/**
+ * Literal node.
+ */
 class literal: public node
 {
 	data_value value;
@@ -78,18 +97,113 @@ public:
 	}
 };
 
+/**
+ * Column reference.
+ */
+class column_ref: public node
+{
+	std::string name;
+public:
+	column_ref(const std::string& n) :
+			node(node::node_type::COLUMN_REF), name(n)
+	{
+	}
+};
+
+/**
+ * Contains a break out of all of the query parts.
+ */
+class query
+{
+public:
+	typedef std::vector<node_handle_type> select_list_type;
+
+private:
+	select_list_type select_expressions;
+
+public:
+	void select(node_list_type &s)
+	{
+	while (!s.empty())
+		{
+			select_expressions.insert(select_expressions.begin(),
+					node_handle_type(s.top().release()));
+			s.pop();
+		}
+	}
+
+	/**
+	 * Provides access to the list of select
+	 * expressions.
+	 */
+	select_list_type& get_select_expressions()
+	{
+	return select_expressions;
+	}
+
+};
+
+/**
+ * Pushes a new literal string value onto the stack.
+ */
+struct push_column_ref: action_base<push_column_ref>
+{
+	static void apply(const std::string& m, node_list_type& s, query& q)
+	{
+	s.push(node_handle_type(new column_ref(m)));
+	}
+};
+
+/**
+ * Pushes a new literal string value onto the stack.
+ */
+struct push_literal_str: action_base<push_literal_str>
+{
+	static void apply(const std::string& m, node_list_type& s, query& q)
+	{
+	data_value v;
+	v.set_value(column::data_type::varchar, m);
+	s.push(node_handle_type(new literal(v)));
+	}
+};
+
+/**
+ * Pushes a new literal numeric value onto the stack.
+ */
+struct push_literal_num: action_base<push_literal_num>
+{
+	static void apply(const std::string& m, node_list_type& s, query& q)
+	{
+	data_value v;
+
+	if (m.size() > 9)
+		{
+			v.set_value(column::data_type::bigint, m);
+		}
+	else
+		{
+			v.set_value(column::data_type::integer, m);
+		}
+
+	s.push(node_handle_type(new literal(v)));
+	}
+};
+
+/**
+ * Takes the top two items off the top of the stack, and creates
+ * a binop. It then pushes the binop onto the stack.
+ */
 struct push_binop: action_base<push_binop>
 {
-	static void apply(const std::string& m, node_list_type& s)
+	static void apply(const std::string& m, node_list_type& s, query& q)
 	{
-	node::node_type type;
+	auto type = node::node_type::ROOT;
 
 	switch (m[0])
 		{
 	case '+':
 		type = node::node_type::OP_ADD;
 		break;
-
 	case '-':
 		type = node::node_type::OP_SUB;
 		break;
@@ -110,12 +224,25 @@ struct push_binop: action_base<push_binop>
 		break;
 		}
 
+	// Pop the two top nodes so they can be joined.
 	auto left = s.top().release();
 	s.pop();
 	auto right = s.top().release();
 	s.pop();
 
-	auto new_node = new binop(type, left, right);
+	// Replace the top node.
+	s.push(node_handle_type(new binop(type, left, right)));
+	}
+};
+
+/**
+ * Sweeps the stack into a list to define the list of select expressions.
+ */
+struct select: action_base<select>
+{
+	static void apply(const std::string& m, node_list_type& s, query& q)
+	{
+	q.select(s);
 	}
 };
 

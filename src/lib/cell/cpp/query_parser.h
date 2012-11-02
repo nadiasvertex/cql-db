@@ -25,14 +25,17 @@ struct sql_string :
 struct numeric :
 		plus< digit > {};
 
+struct null_value :
+		string<'n', 'u', 'l', 'l'> {};
+
 struct value :
 		sor<
-			sql_string,
-			numeric
+			ifapply< sql_string, actions::push_literal_str>,
+			ifapply< numeric, actions::push_literal_num>
 		> {};
 
 struct column_name :
-		identifier {};
+		ifapply< identifier, actions::push_column_ref > {};
 
 struct term :
 		sor<
@@ -42,17 +45,17 @@ struct term :
 		 > {};
 
 struct factor :
-		seq< term, star<  seq< one<'*', '/', '%'>, term > > > {};
+		seq< term, star< ifapply< seq< one<'*', '/', '%'>, term >, actions::push_binop > > > {};
 
 struct summand :
-		seq< factor, star< seq< one<'+', '-'>, factor > > > {};
+		seq< factor, star< ifapply< seq< one<'+', '-'>, factor > , actions::push_binop > > > {};
 
 struct operand :
 		list< summand, string< '|', '|' > > {};
 
 struct condition_rhs :
 		sor<
-			seq< string<'i', 's'>, opt< string<'n', 'o', 't'> >, string<'n', 'u', 'l', 'l'> >,
+			seq< string<'i', 's'>, opt< string<'n', 'o', 't'> >, null_value >,
 			seq< string<'b', 'e', 't', 'w', 'e', 'e', 'n'>, operand, string<'a', 'n', 'd'>, operand >,
 			seq< string<'i', 'n'>, pad<one< '(' > , space >, list<expression, one<','> >, pad< one < ')'>, space > >
 		> {};
@@ -86,7 +89,8 @@ struct select_expression :
 
 struct select :
 		seq< pad< string< 's', 'e', 'l', 'e', 'c', 't'>, space >,
-			  list<select_expression, pad< one<','>, space > >
+			  list<select_expression, pad< one<','>, space > >,
+			  apply< actions::select >
 		> {};
 
 } //end parser namespace
@@ -98,6 +102,7 @@ public:
 private:
   database&   db;
   std::string query_data;
+  actions::query q;
 
 public:
   query_parser(database& _db, std::string _query_data) :
@@ -107,8 +112,14 @@ public:
 
   bool parse()
   {
-	  pegtl::basic_parse_string< recognizer::select >(query_data);
+	  actions::node_list_type s;
+	  pegtl::basic_parse_string< recognizer::select>(query_data, s, q);
 	  return true;
+  }
+
+  actions::query& get_query()
+  {
+	  return std::ref(q);
   }
 
 };

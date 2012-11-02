@@ -65,6 +65,12 @@ TEST_F(QueryParserTest, CanParseSelectOne)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  ASSERT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::LITERAL, se[0]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseSelectOneCommaTwo)
@@ -75,6 +81,13 @@ TEST_F(QueryParserTest, CanParseSelectOneCommaTwo)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect two select expressions.
+   auto& se = qp.get_query().get_select_expressions();
+   EXPECT_EQ(2, se.size());
+
+   EXPECT_EQ(actions::node::node_type::LITERAL, se[0]->get_type());
+   EXPECT_EQ(actions::node::node_type::LITERAL, se[1]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseSelectColumns)
@@ -85,6 +98,13 @@ TEST_F(QueryParserTest, CanParseSelectColumns)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect two select expressions.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(2, se.size());
+
+  EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
+  EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[1]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseSelectColumnAndNumber)
@@ -95,6 +115,13 @@ TEST_F(QueryParserTest, CanParseSelectColumnAndNumber)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect two select expressions.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(2, se.size());
+
+  EXPECT_EQ(actions::node::node_type::LITERAL, se[0]->get_type());
+  EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[1]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseSelectString)
@@ -105,6 +132,12 @@ TEST_F(QueryParserTest, CanParseSelectString)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::LITERAL, se[0]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseAddition)
@@ -115,6 +148,10 @@ TEST_F(QueryParserTest, CanParseAddition)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
 }
 
 TEST_F(QueryParserTest, CanParseSubtraction)
@@ -125,6 +162,10 @@ TEST_F(QueryParserTest, CanParseSubtraction)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
 }
 
 TEST_F(QueryParserTest, CanParseMultiplication)
@@ -135,6 +176,10 @@ TEST_F(QueryParserTest, CanParseMultiplication)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
 }
 
 TEST_F(QueryParserTest, CanParseDivision)
@@ -145,6 +190,10 @@ TEST_F(QueryParserTest, CanParseDivision)
   query_parser qp(*db, query_data);
 
   EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
 }
 
 
