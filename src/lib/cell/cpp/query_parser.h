@@ -3,9 +3,7 @@
 
 #include <vector>
 
-#include <cell/cpp/predicate.h>
-#include <cell/cpp/database.h>
-
+#include <cell/cpp/parser_actions.h>
 #include <pegtl.hh>
 
 namespace lattice

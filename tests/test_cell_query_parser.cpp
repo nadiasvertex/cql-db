@@ -107,6 +107,45 @@ TEST_F(QueryParserTest, CanParseSelectString)
   EXPECT_TRUE(qp.parse());
 }
 
+TEST_F(QueryParserTest, CanParseAddition)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 7+9");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseSubtraction)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 9-7");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseMultiplication)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 8*8");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
+
+TEST_F(QueryParserTest, CanParseDivision)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select 16/4");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+}
 
 
 
