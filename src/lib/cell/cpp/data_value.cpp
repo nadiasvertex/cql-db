@@ -1,3 +1,4 @@
+#include <string>
 #include <cell/cpp/data_value.h>
 #include <cell/cpp/page_cursor.h>
 
@@ -27,7 +28,7 @@ public:
 
 data_value::~data_value()
 {
-if (type == column::data_type::varchar)
+if (type == column::data_type::varchar && value.s != nullptr)
 	{
 		delete value.s;
 	}
@@ -352,11 +353,15 @@ case column::data_type::bigint:
 	break;
 
 case column::data_type::real:
-	out.value.i16 = static_cast<std::int16_t>(value.f32);
+	out.value.i16 = std::int16_t(value.f32);
 	break;
 
 case column::data_type::double_precision:
-	out.value.i16 = static_cast<std::int16_t>(value.f64);
+	out.value.i16 = std::int16_t(value.f64);
+	break;
+
+case column::data_type::varchar:
+	out.set_value(column::data_type::smallint, *value.s);
 	break;
 	}
 
@@ -388,6 +393,10 @@ case column::data_type::real:
 case column::data_type::double_precision:
 	out.value.i32 = std::int32_t(value.f64);
 	break;
+
+case column::data_type::varchar:
+	out.set_value(column::data_type::integer, *value.s);
+	break;
 	}
 
 return out;
@@ -417,6 +426,10 @@ case column::data_type::real:
 
 case column::data_type::double_precision:
 	out.value.i64 = std::int64_t(value.f64);
+	break;
+
+case column::data_type::varchar:
+	out.set_value(column::data_type::bigint, *value.s);
 	break;
 	}
 
@@ -448,6 +461,10 @@ case column::data_type::real:
 case column::data_type::double_precision:
 	out.value.f32 = float(value.f64);
 	break;
+
+case column::data_type::varchar:
+	out.set_value(column::data_type::real, *value.s);
+	break;
 	}
 
 return out;
@@ -478,11 +495,53 @@ case column::data_type::real:
 case column::data_type::double_precision:
 	out.value.f64 = double(value.f64);
 	break;
+
+case column::data_type::varchar:
+	out.set_value(column::data_type::double_precision, *value.s);
+	break;
 	}
 
 return out;
 }
 
+data_value data_value::as_string() const
+{
+data_value out(column::data_type::varchar);
+out.has_value = true;
+
+switch (type)
+	{
+case column::data_type::smallint:
+	out.value.s = new std::string(std::to_string(value.i16));
+	break;
+
+case column::data_type::integer:
+	out.value.s = new std::string(std::to_string(value.i32));
+	break;
+
+case column::data_type::bigint:
+	out.value.s = new std::string(std::to_string(value.i64));
+	break;
+
+case column::data_type::real:
+	out.value.s = new std::string(std::to_string(value.f32));
+	break;
+
+case column::data_type::double_precision:
+	out.value.s = new std::string(std::to_string(value.f64));
+	break;
+
+case column::data_type::varchar:
+	out.value.s = new std::string(*(value.s));
+	break;
+
+default:
+	out.value.s = nullptr;
+	out.has_value = false;
+	}
+
+return out;
+}
 
 data_value operator+(const data_value& l, const data_value& r)
 {
@@ -506,7 +565,11 @@ case column::data_type::double_precision:
 	out.set_value(l.type, l.value.f64 + r.as_double_precision().value.f64);
 	break;
 case column::data_type::varchar:
-	//out.set_value(l.type, new std::string(*(l.value.s) + *(r.as_string().value.s)));
+	{
+		auto* ls = l.value.s;
+		auto* rs = r.as_string().value.s;
+		out.set_value(l.type, (*ls) + (*rs));
+	}
 	break;
 	}
 
