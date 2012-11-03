@@ -56,5 +56,9 @@ TEST_F(QueryTest, CanSelect)
   using namespace lattice::cell;
 
   query q(*db, "select 1");
+
+  auto r = q.fetch_one();
+
+  EXPECT_EQ(1, r.size());
 }
 

@@ -107,6 +107,10 @@ public:
 		}
 	}
 
+			tuple_type fetch_one()
+			{
+				return solve_once();
+			}
 
 
 };

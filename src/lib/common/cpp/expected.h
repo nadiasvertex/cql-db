@@ -8,6 +8,8 @@
 #ifndef __LATTICE_EXPECTED_H_
 #define __LATTICE_EXPECTED_H_
 
+#include <typeinfo>
+#include <stdexcept>
 #include <exception>
 
 namespace lattice {

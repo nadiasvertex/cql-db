@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 
+#include <common/cpp/expected.h>
 #include <cell/cpp/column.h>
 
 namespace lattice
@@ -47,6 +48,12 @@ public:
 			type(t), has_value(false)
 	{
 	}
+
+	/**
+	 * Copy constructor. Ensures that strings
+	 * are handled correctly.
+	 */
+	data_value(const data_value& o);
 
 	/**
 	 * Cleans up resources, like string pointers.
@@ -122,6 +129,15 @@ public:
 	data_value as_string() const;
 
 	/**
+    * Turns this data value into a std::string.
+    */
+	std::string to_string() const 
+		{
+			auto o = as_string();
+			return std::string(*o.value.s);
+		}
+
+	/**
 	 * Write this data value into a buffer.
 	 *
 	 * @param buffer: The buffer to write into.
@@ -168,7 +184,10 @@ public:
 	 */
 	bool operator<(const data_value& o) const;
 
-	friend data_value operator+(const data_value& l, const data_value& r);
+	friend expected<data_value> operator+(const data_value& l, const data_value& r);
+	friend expected<data_value> operator-(const data_value& l, const data_value& r);
+	friend expected<data_value> operator*(const data_value& l, const data_value& r);
+	friend expected<data_value> operator/(const data_value& l, const data_value& r);
 };
 
 template<>
@@ -177,7 +196,22 @@ void data_value::set_value<>(column::data_type t, const std::string& data);
 /**
  * Adds two data values together, if possible.
  */
-data_value operator+(const data_value& l, const data_value& r);
+expected<data_value> operator+(const data_value& l, const data_value& r);
+
+/**
+ * Subtracts two data values from each other, if possible.
+ */
+expected<data_value> operator-(const data_value& l, const data_value& r);
+
+/**
+ * Multiplies two data values together, if possible.
+ */
+expected<data_value> operator*(const data_value& l, const data_value& r);
+
+/**
+ * Divides two data values from each other, if possible.
+ */
+expected<data_value> operator/(const data_value& l, const data_value& r);
 
 } // namespace cell
 } // namespace lattice
