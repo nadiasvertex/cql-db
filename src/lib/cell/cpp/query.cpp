@@ -140,6 +140,9 @@ data_value query::dispatch(select_group_type& sg)
 
 						visited.insert(cur_node);
 						evaluate(cur_node->get_type(), s);
+
+						cur_node=s.top();
+						s.pop();
 					}
 				break;
 

@@ -51,7 +51,7 @@ TEST_F(QueryTest, CanCreate)
       );
 }
 
-TEST_F(QueryTest, CanSelect)
+TEST_F(QueryTest, CanSelectOne)
 {
   using namespace lattice::cell;
 
@@ -59,6 +59,18 @@ TEST_F(QueryTest, CanSelect)
 
   auto r = q.fetch_one();
 
-  EXPECT_EQ(1, r.size());
+  ASSERT_EQ(1, r.size());
+  EXPECT_EQ(std::string("1"), r[0]);
 }
 
+TEST_F(QueryTest, CanSelectOnePlusOne)
+{
+  using namespace lattice::cell;
+
+  query q(*db, "select 1+1");
+
+  auto r = q.fetch_one();
+
+  ASSERT_EQ(1, r.size());
+  EXPECT_EQ(std::string("2"), r[0]);
+}
