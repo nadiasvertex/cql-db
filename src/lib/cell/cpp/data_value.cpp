@@ -581,7 +581,7 @@ expected<data_value> operator+(const data_value& l, const data_value& r)
 		out.set_value(l.type, l.value.i64 + r.as_bigint().value.i64);
 		break;
 	case column::data_type::real:
-		out.set_value(l.type, l.value.f32 + r.as_real().value.i32);
+		out.set_value(l.type, l.value.f32 + r.as_real().value.f32);
 		break;
 	case column::data_type::double_precision:
 		out.set_value(l.type, l.value.f64 + r.as_double_precision().value.f64);
@@ -617,7 +617,7 @@ expected<data_value> operator-(const data_value& l, const data_value& r)
 		out.set_value(l.type, l.value.i64 - r.as_bigint().value.i64);
 		break;
 	case column::data_type::real:
-		out.set_value(l.type, l.value.f32 - r.as_real().value.i32);
+		out.set_value(l.type, l.value.f32 - r.as_real().value.f32);
 		break;
 	case column::data_type::double_precision:
 		out.set_value(l.type, l.value.f64 - r.as_double_precision().value.f64);
@@ -651,7 +651,7 @@ expected<data_value> operator*(const data_value& l, const data_value& r)
 		out.set_value(l.type, l.value.i64 * r.as_bigint().value.i64);
 		break;
 	case column::data_type::real:
-		out.set_value(l.type, l.value.f32 * r.as_real().value.i32);
+		out.set_value(l.type, l.value.f32 * r.as_real().value.f32);
 		break;
 	case column::data_type::double_precision:
 		out.set_value(l.type, l.value.f64 * r.as_double_precision().value.f64);
@@ -685,7 +685,7 @@ expected<data_value> operator/(const data_value& l, const data_value& r)
 		out.set_value(l.type, l.value.i64 / r.as_bigint().value.i64);
 		break;
 	case column::data_type::real:
-		out.set_value(l.type, l.value.f32 / r.as_real().value.i32);
+		out.set_value(l.type, l.value.f32 / r.as_real().value.f32);
 		break;
 	case column::data_type::double_precision:
 		out.set_value(l.type, l.value.f64 / r.as_double_precision().value.f64);

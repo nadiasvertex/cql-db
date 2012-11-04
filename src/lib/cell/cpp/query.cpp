@@ -60,9 +60,9 @@ void push_value(expected<data_value> value, node_stack_type& s)
 void evaluate(actions::node::node_type type, node_stack_type& s)
 {
 
-	auto r = get_value(s.top());
-	s.pop();
 	auto l = get_value(s.top());
+	s.pop();
+	auto r = get_value(s.top());
 	s.pop();
 
 	// Make sure that both arguments are valid.
