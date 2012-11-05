@@ -116,9 +116,9 @@ struct list_literal :
 struct term :
 		sor<
 		   value,
+	      ifapply< seq< identifier, period_kw, identifier >, actions::push_deref >,
 			column_name,
-	      seq< open_paren_kw, expression, close_paren_kw >,
-	      seq< table_name, period_kw, column_name, apply< actions::push_deref > >
+			seq< open_paren_kw, expression, close_paren_kw >
 		 > {};
 
 struct factor :

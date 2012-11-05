@@ -150,6 +150,7 @@ data_value query::dispatch(select_group_type& sg)
 				// and replace it with the the current node.
 			case actions::node::node_type::LITERAL:
 			case actions::node::node_type::COLUMN_REF:
+			case actions::node::node_type::TABLE_REF:
 				{
 					if (s.empty())
 						{

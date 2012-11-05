@@ -88,6 +88,27 @@ struct push_table_ref: action_base<push_table_ref>
 };
 
 /**
+ * Takes the input string and converts it to two nodes: a table_ref and a
+ * column_ref. The column_ref is plugged into the table_ref, which is
+ * left on the stack.
+ */
+struct push_deref: action_base<push_deref>
+{
+	static void apply(const std::string& m, node_list_type& s,
+			query_stack_type& q)
+	{
+		auto p = m.find('.');
+
+		auto* tbl_ref = new table_ref(m.substr(0, p));
+		auto* col_ref = new column_ref(m.substr(p+1,m.size()-p));
+
+		tbl_ref->set_column_ref(col_ref);
+
+		s.push(node_handle_type(tbl_ref));
+	}
+};
+
+/**
  * Pushes a new literal string value onto the stack.
  */
 struct push_literal_str: action_base<push_literal_str>
@@ -168,38 +189,6 @@ struct push_binop: action_base<push_binop>
 
 		// Replace the top node.
 		s.push(node_handle_type(new binop(type, left, right)));
-	}
-};
-
-/**
- * Takes the top item off the top of the stack, which
- * must be a column_ref, and then sets the table_ref's col_ref.
- */
-struct push_deref: action_base<push_deref>
-{
-	static void apply(const std::string& m, node_list_type& s,
-			query_stack_type& q)
-	{
-
-		auto col_ref = dynamic_cast<column_ref*>(s.top().release());
-		s.pop();
-
-		auto tbl_ref = dynamic_cast<table_ref*>(s.top().get());
-
-		if (col_ref == nullptr)
-			{
-				throw std::invalid_argument(
-						"expected top of stack to be a column_ref node.");
-			}
-
-		if (tbl_ref == nullptr)
-			{
-				throw std::invalid_argument(
-						"expected top-1 of stack to be a table_ref node.");
-			}
-
-		tbl_ref->set_column_ref(col_ref);
-
 	}
 };
 
