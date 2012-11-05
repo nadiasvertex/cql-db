@@ -26,6 +26,105 @@ namespace actions
 using namespace pegtl;
 
 /**
+ * Encapsulates a table expression. This may contain many joins.
+ */
+class table_expr
+{
+public:
+	enum class join_type
+	{
+		LEFT_OUTER,
+		RIGHT_OUTER,
+		INNER,
+		CROSS,
+		NATURAL
+	};
+
+	typedef std::unique_ptr<table_expr> handle;
+
+	/**
+	 * Models a table join.
+	 */
+	class join
+	{
+		/**
+		 * The type of join.
+		 */
+		join_type jt;
+
+		/**
+		 * The table expression involved in the join.
+		 */
+		 handle tbl_expr;
+	public:
+		join(join_type _jt) :
+				jt(_jt)
+		{
+		}
+		;
+
+		/**
+		 * Sets the table expression for this join.
+		 *
+		 * @param te: The table expression.
+		 */
+		void set_table_expr(table_expr *te)
+			{
+				tbl_expr = handle(te);
+			}
+	};
+
+	/** Type for storing a list of joins. */
+	typedef std::vector<join> join_list_type;
+
+private:
+	/**
+	 * A list of joins involved in this table. May be
+	 * empty.
+	 */
+	join_list_type joins;
+
+	/**
+	 * The name of the table involved in the table expression
+	 * (if any.)
+	 */
+	std::string name;
+
+public:
+	/**
+	 * Sets the name of the table involved in this table
+	 * expression.
+	 *
+	 * @param n: The name of the table.
+	 */
+	void set_table_name(const std::string& n)
+	{
+		name = n;
+	}
+
+	/**
+	 * Sets the name of the table in the last join added
+	 * to the table expression.
+	 *
+	 * @param te: The table expression for the current join.
+	 */
+	void set_join_table_expr(table_expr *te)
+	{
+		joins.back().set_table_expr(te);
+	}
+
+	/**
+	 * Adds a new join to the table expression.
+	 *
+	 * @param jt: The type of join to add.
+	 */
+	void add_join(join_type jt)
+	{
+		joins.emplace_back(jt);
+	}
+};
+
+/**
  * Contains a break out of all of the query parts.
  */
 class query
@@ -34,9 +133,21 @@ public:
 	typedef std::vector<node_handle_type> select_list_type;
 
 private:
+	/**
+	 * The list of select expressions for this query.
+	 */
 	select_list_type select_expressions;
 
 public:
+	/** The table expression for this query. */
+	table_expr table_expression;
+
+	/**
+	 * Sweeps all nodes on the given stack into
+	 * select expressions for this query.
+	 *
+	 * @param s: The node stack to process.
+	 */
 	void select(node_list_type &s)
 	{
 		while (!s.empty())
@@ -69,7 +180,7 @@ typedef std::stack<actions::query_handle_type> query_stack_type;
 struct push_column_ref: action_base<push_column_ref>
 {
 	static void apply(const std::string& m, node_list_type& s,
-			query_stack_type& q)
+			query_stack_type& qs)
 	{
 		s.push(node_handle_type(new column_ref(m)));
 	}
@@ -81,7 +192,7 @@ struct push_column_ref: action_base<push_column_ref>
 struct push_table_ref: action_base<push_table_ref>
 {
 	static void apply(const std::string& m, node_list_type& s,
-			query_stack_type& q)
+			query_stack_type& qs)
 	{
 		s.push(node_handle_type(new table_ref(m)));
 	}
@@ -95,12 +206,12 @@ struct push_table_ref: action_base<push_table_ref>
 struct push_deref: action_base<push_deref>
 {
 	static void apply(const std::string& m, node_list_type& s,
-			query_stack_type& q)
+			query_stack_type& qs)
 	{
 		auto p = m.find('.');
 
 		auto* tbl_ref = new table_ref(m.substr(0, p));
-		auto* col_ref = new column_ref(m.substr(p+1,m.size()-p));
+		auto* col_ref = new column_ref(m.substr(p + 1, m.size() - p));
 
 		tbl_ref->set_column_ref(col_ref);
 
@@ -109,12 +220,40 @@ struct push_deref: action_base<push_deref>
 };
 
 /**
+ * Adds a new table join.
+ */
+template<table_expr::join_type JT>
+struct add_table_join: action_base<add_table_join<JT>>
+{
+	static void apply(const std::string& m, node_list_type& s,
+			query_stack_type& qs)
+	{
+		auto* q = qs.top().get();
+		q->table_expression.add_join(JT);
+	}
+};
+
+/**
+ * Sets the name of the current table expression.
+ */
+struct set_table_name: action_base<set_table_name>
+{
+	static void apply(const std::string& m, node_list_type& s,
+			query_stack_type& qs)
+	{
+		auto* q = qs.top().get();
+		q->table_expression.set_table_name(m);
+	}
+};
+
+
+/**
  * Pushes a new literal string value onto the stack.
  */
 struct push_literal_str: action_base<push_literal_str>
 {
 	static void apply(const std::string& m, node_list_type& s,
-			query_stack_type& q)
+			query_stack_type& qs)
 	{
 		data_value v;
 		v.set_value(column::data_type::varchar, m);
@@ -128,7 +267,7 @@ struct push_literal_str: action_base<push_literal_str>
 struct push_literal_num: action_base<push_literal_num>
 {
 	static void apply(const std::string& m, node_list_type& s,
-			query_stack_type& q)
+			query_stack_type& qs)
 	{
 		data_value v;
 

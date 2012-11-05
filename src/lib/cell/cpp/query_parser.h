@@ -165,7 +165,7 @@ struct values_expression :
 	{};
 
 struct table_expression :
-	seq< sor< table_name,
+	seq< sor< ifapply< identifier, actions::set_table_name>,
 	          seq< open_paren_kw , select, close_paren_kw >,
 	          list< seq< open_paren_kw , values_expression, close_paren_kw >, comma_kw >
          >,
@@ -177,10 +177,12 @@ struct table_expression :
 struct join :
 	seq<
 	    sor<
-			   seq< sor< left_kw, right_kw >, outer_kw >,
-			   inner_kw,
-			   cross_kw,
-			   natural_kw
+			   ifapply< seq< left_kw, outer_kw >, actions::add_table_join<actions::table_expr::join_type::LEFT_OUTER> >,
+			   ifapply< seq< right_kw, outer_kw >, actions::add_table_join<actions::table_expr::join_type::RIGHT_OUTER> >,
+			   ifapply< left_kw, actions::add_table_join<actions::table_expr::join_type::LEFT_OUTER> >,
+			   ifapply< inner_kw, actions::add_table_join<actions::table_expr::join_type::INNER> >,
+			   ifapply< cross_kw, actions::add_table_join<actions::table_expr::join_type::CROSS> >,
+			   ifapply< natural_kw, actions::add_table_join<actions::table_expr::join_type::NATURAL> >
 	    >,
 	    join_kw, table_expression, on_kw, expression
 	> {};
