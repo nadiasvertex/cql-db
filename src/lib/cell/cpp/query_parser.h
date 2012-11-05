@@ -31,11 +31,29 @@ struct null_value :
 struct is_kw :
 		pad< string<'i', 's'>, space> {};
 
+ struct as_kw :
+	 pad< string<'a', 's'>, space> {};
+
 struct not_kw :
 		pad< string<'n', 'o', 't'>, space> {};
 
 struct between_kw :
 	   pad< string<'b', 'e', 't', 'w', 'e', 'e', 'n'>, space> {};
+
+struct values_kw :
+	   pad< string<'v', 'a', 'l', 'u', 'e', 's'>, space> {};
+
+struct from_kw :
+		pad< string<'f', 'r', 'o', 'm'>, space> {};
+
+struct comma_kw :
+		pad< one<','>, space> {};
+
+struct open_paren_kw :
+		pad< one< '(' >, space > {};
+
+struct close_paren_kw :
+		pad< one< ')' >, space > {};
 
 struct value :
 		sor<
@@ -46,11 +64,14 @@ struct value :
 struct column_name :
 		ifapply< identifier, actions::push_column_ref > {};
 
+struct list_literal :
+		seq< open_paren_kw, list< expression, comma_kw >, close_paren_kw > {};
+
 struct term :
 		sor<
 		   value,
 			column_name,
-			seq< pad< one< '(' >, space >, expression, pad< one< ')'>, space > >
+	      seq< open_paren_kw, expression, close_paren_kw >
 		 > {};
 
 struct factor :
@@ -66,13 +87,13 @@ struct condition_rhs :
 		sor<
 			seq< is_kw, opt< not_kw >, null_value >,
 			seq< between_kw, operand, string<'a', 'n', 'd'>, operand >,
-			seq< string<'i', 'n'>, pad<one< '(' > , space >, list<expression, one<','> >, pad< one < ')'>, space > >
+			seq< string<'i', 'n'>, list_literal >
 		> {};
 
 struct condition :
 		sor< seq< operand, opt< condition_rhs > >,
 		     seq< string< 'n', 'o', 't' >, condition >,
-		     seq< string< 'e', 'x', 'i', 's', 't', 's' >, pad<one< '(' >, space >, select, pad< one< ')' >, space > >
+		     seq< string< 'e', 'x', 'i', 's', 't', 's' >, open_paren_kw, select, close_paren_kw >
 		> {};
 
 struct and_condition :
@@ -85,10 +106,31 @@ struct expression :
 		sor< and_condition, or_condition> {};
 
 struct column_alias :
-		seq< pad< string<'a', 's'>, space> , column_name > {};
+		seq< as_kw , column_name > {};
+
+struct table_name :
+		ifapply< identifier, actions::push_table_ref > {};
+
+struct table_alias :
+		seq< as_kw , table_name > {};
+
+struct values_expression :
+	seq< values_kw,
+        list_literal
+   >
+	{};
+
+struct table_expression :
+	seq< sor< table_name,
+	          seq< open_paren_kw , select, close_paren_kw >,
+	          list< seq< open_paren_kw , values_expression, close_paren_kw >, comma_kw >
+         >,
+	     opt< table_alias >
+   >
+			  {};
 
 struct from :
-		seq< string< 'f', 'r', 'o', 'm'> > {};
+	seq< from_kw, table_expression > {};
 
 struct select_expression :
 		plus< sor< one<'*'>,
@@ -98,8 +140,9 @@ struct select_expression :
 
 struct select :
 		seq< pad< string< 's', 'e', 'l', 'e', 'c', 't'>, space >,
-			  list<select_expression, pad< one<','>, space > >,
-			  apply< actions::select >
+			  list<select_expression, comma_kw >,
+ 	        apply< actions::select >,
+           opt< from >
 		> {};
 
 } //end parser namespace

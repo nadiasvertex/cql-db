@@ -45,6 +45,7 @@ public:
 		OP_MOD,
 		OP_CAT,
 		COLUMN_REF,
+		TABLE_REF,
 		LITERAL
 	};
 
@@ -149,6 +150,25 @@ public:
 };
 
 /**
+ * Table reference.
+ */
+class table_ref: public node
+{
+	std::string name;
+public:
+	table_ref(const std::string& n) :
+			node(node::node_type::TABLE_REF), name(n)
+	{
+	}
+
+	virtual ~table_ref()
+	{
+	}
+};
+
+
+
+/**
  * Contains a break out of all of the query parts.
  */
 class query
@@ -182,13 +202,24 @@ public:
 };
 
 /**
- * Pushes a new literal string value onto the stack.
+ * Pushes a new column reference value onto the stack.
  */
 struct push_column_ref: action_base<push_column_ref>
 {
 	static void apply(const std::string& m, node_list_type& s, query& q)
 	{
 	s.push(node_handle_type(new column_ref(m)));
+	}
+};
+
+/**
+ * Pushes a new table reference value onto the stack.
+ */
+struct push_table_ref: action_base<push_table_ref>
+{
+	static void apply(const std::string& m, node_list_type& s, query& q)
+	{
+	s.push(node_handle_type(new table_ref(m)));
 	}
 };
 
