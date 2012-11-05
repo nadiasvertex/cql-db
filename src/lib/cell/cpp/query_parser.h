@@ -17,6 +17,7 @@ namespace recognizer
 using namespace pegtl;
 
 struct expression;
+struct join;
 struct select;
 
 struct sql_string :
@@ -28,11 +29,23 @@ struct numeric :
 struct null_value :
 		pad< string<'n', 'u', 'l', 'l'>, space> {};
 
+struct as_kw :
+		pad< string<'a', 's'>, space> {};
+
+struct in_kw :
+		pad< string<'i', 'n'>, space> {};
+
 struct is_kw :
 		pad< string<'i', 's'>, space> {};
 
- struct as_kw :
-	 pad< string<'a', 's'>, space> {};
+struct on_kw :
+		pad< string<'o', 'n'>, space> {};
+
+struct or_kw :
+      pad< string<'o', 'r'>, space> {};
+
+struct and_kw :
+		pad< string<'a', 'n', 'd'>, space> {};
 
 struct not_kw :
 		pad< string<'n', 'o', 't'>, space> {};
@@ -43,11 +56,41 @@ struct between_kw :
 struct values_kw :
 	   pad< string<'v', 'a', 'l', 'u', 'e', 's'>, space> {};
 
+struct exists_kw :
+		pad< string< 'e', 'x', 'i', 's', 't', 's' >, space> {};
+
+struct select_kw :
+		pad< string< 's', 'e', 'l', 'e', 'c', 't'>, space > {};
+
 struct from_kw :
 		pad< string<'f', 'r', 'o', 'm'>, space> {};
 
+struct inner_kw :
+		pad< string< 'i', 'n', 'n', 'e', 'r'>, space > {};
+
+struct left_kw :
+		pad< string< 'l', 'e', 'f', 't'>, space > {};
+
+struct right_kw :
+		pad< string< 'r', 'i', 'g', 'h', 't'>, space > {};
+
+struct outer_kw :
+		pad< string< 'o', 'u', 't', 'e', 'r'>, space > {};
+
+struct cross_kw :
+		pad< string< 'c', 'r', 'o', 's', 's'>, space > {};
+
+struct natural_kw :
+		pad< string< 'n', 'a', 't', 'u', 'r', 'a', 'l'>, space > {};
+
+struct join_kw :
+		pad< string< 'j', 'o', 'i', 'n'>, space > {};
+
 struct comma_kw :
 		pad< one<','>, space> {};
+
+struct period_kw :
+		pad< one<'.'>, space> {};
 
 struct open_paren_kw :
 		pad< one< '(' >, space > {};
@@ -64,6 +107,9 @@ struct value :
 struct column_name :
 		ifapply< identifier, actions::push_column_ref > {};
 
+struct table_name :
+		ifapply< identifier, actions::push_table_ref > {};
+
 struct list_literal :
 		seq< open_paren_kw, list< expression, comma_kw >, close_paren_kw > {};
 
@@ -71,7 +117,8 @@ struct term :
 		sor<
 		   value,
 			column_name,
-	      seq< open_paren_kw, expression, close_paren_kw >
+	      seq< open_paren_kw, expression, close_paren_kw >,
+	      seq< table_name, period_kw, column_name, apply< actions::push_deref > >
 		 > {};
 
 struct factor :
@@ -86,30 +133,27 @@ struct operand :
 struct condition_rhs :
 		sor<
 			seq< is_kw, opt< not_kw >, null_value >,
-			seq< between_kw, operand, string<'a', 'n', 'd'>, operand >,
-			seq< string<'i', 'n'>, list_literal >
+			seq< between_kw, operand, and_kw, operand >,
+			seq< in_kw, list_literal >
 		> {};
 
 struct condition :
 		sor< seq< operand, opt< condition_rhs > >,
-		     seq< string< 'n', 'o', 't' >, condition >,
-		     seq< string< 'e', 'x', 'i', 's', 't', 's' >, open_paren_kw, select, close_paren_kw >
+		     seq< not_kw, condition >,
+		     seq< exists_kw, open_paren_kw, select, close_paren_kw >
 		> {};
 
 struct and_condition :
-		seq< condition, opt< string<'a', 'n', 'd'>, condition > > {};
+		seq< condition, opt< and_kw, condition > > {};
 
 struct or_condition :
-		seq< condition, opt< string<'o', 'r'>, condition > > {};
+		seq< condition, opt< or_kw, condition > > {};
 
 struct expression :
 		sor< and_condition, or_condition> {};
 
 struct column_alias :
 		seq< as_kw , column_name > {};
-
-struct table_name :
-		ifapply< identifier, actions::push_table_ref > {};
 
 struct table_alias :
 		seq< as_kw , table_name > {};
@@ -125,9 +169,21 @@ struct table_expression :
 	          seq< open_paren_kw , select, close_paren_kw >,
 	          list< seq< open_paren_kw , values_expression, close_paren_kw >, comma_kw >
          >,
-	     opt< table_alias >
+	     opt< table_alias >,
+	     star< join >
    >
 			  {};
+
+struct join :
+	seq<
+	    sor<
+			   seq< sor< left_kw, right_kw >, outer_kw >,
+			   inner_kw,
+			   cross_kw,
+			   natural_kw
+	    >,
+	    join_kw, table_expression, on_kw, expression
+	> {};
 
 struct from :
 	seq< from_kw, table_expression > {};
@@ -139,7 +195,7 @@ struct select_expression :
 		> {};
 
 struct select :
-		seq< pad< string< 's', 'e', 'l', 'e', 'c', 't'>, space >,
+		seq< select_kw,
 			  list<select_expression, comma_kw >,
  	        apply< actions::select >,
            opt< from >

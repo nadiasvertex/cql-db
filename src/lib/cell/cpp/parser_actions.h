@@ -155,14 +155,25 @@ public:
 class table_ref: public node
 {
 	std::string name;
+
+	std::unique_ptr<column_ref> col_ref;
+
 public:
 	table_ref(const std::string& n) :
-			node(node::node_type::TABLE_REF), name(n)
+			node(node::node_type::TABLE_REF), name(n), col_ref(nullptr)
 	{
 	}
 
 	virtual ~table_ref()
 	{
+	}
+
+	/**
+	 * Sets the column reference.
+	 */
+	void set_column_ref(column_ref *cr)
+	{
+		col_ref = std::unique_ptr<column_ref>(cr);
 	}
 };
 
@@ -303,6 +314,36 @@ struct push_binop: action_base<push_binop>
 	s.push(node_handle_type(new binop(type, left, right)));
 	}
 };
+
+/**
+ * Takes the top item off the top of the stack, which
+ * must be a column_ref, and then sets the table_ref's col_ref.
+ */
+struct push_deref: action_base<push_deref>
+{
+	static void apply(const std::string& m, node_list_type& s, query& q)
+	{
+
+	auto col_ref = dynamic_cast<column_ref*>(s.top().release());
+	s.pop();
+
+	auto tbl_ref = dynamic_cast<table_ref*>(s.top().get());
+
+	if (col_ref == nullptr)
+		{
+			throw std::invalid_argument("expected top of stack to be a column_ref node.");
+		}
+
+	if (tbl_ref == nullptr)
+		{
+			throw std::invalid_argument("expected top-1 of stack to be a table_ref node.");
+		}
+
+	tbl_ref->set_column_ref(col_ref);
+
+	}
+};
+
 
 /**
  * Sweeps the stack into a list to define the list of select expressions.

@@ -220,6 +220,57 @@ TEST_F(QueryParserTest, CanParseSelectFrom)
   EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
 }
 
+TEST_F(QueryParserTest, CanParseSimpleInnerJoin)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select c1 from test_table_1 as t1 inner join test_table_2 as t2 on t1.c1=t2.c1");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
+}
+
+TEST_F(QueryParserTest, CanParseLeftOuterJoin)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select c1 from test_table_1 as t1 left outer join test_table_2 as t2 on t1.c1=t2.c1");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
+}
+
+TEST_F(QueryParserTest, CanParseRightOuterJoin)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select c1 from test_table_1 as t1 right outer join test_table_2 as t2 on t1.c1=t2.c1");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+
+  // Expect one select expression.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(1, se.size());
+
+  EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
+}
+
+
+
+
 
 
 
