@@ -207,10 +207,11 @@ class query_parser
 {
 public:
 
+
 private:
   database&   db;
   std::string query_data;
-  actions::query q;
+  actions::query_stack_type qs;
 
 public:
   query_parser(database& _db, std::string _query_data) :
@@ -221,13 +222,14 @@ public:
   bool parse()
   {
 	  actions::node_list_type s;
-	  pegtl::basic_parse_string< recognizer::select>(query_data, s, q);
+	  qs.push(actions::query_handle_type(new actions::query));
+	  pegtl::basic_parse_string<recognizer::select>(query_data, s, qs);
 	  return true;
   }
 
   actions::query& get_query()
   {
-	  return std::ref(q);
+	  return std::ref(*(qs.top().get()));
   }
 
 };

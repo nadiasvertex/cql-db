@@ -90,28 +90,30 @@ public:
 	query(database& _db, const std::string& query_data) :
 			db(_db), parser(_db, query_data)
 	{
-	if (query_data.size() == 0)
-		{
-			return;
-		}
-
-	parser.parse();
-
-	auto& se_list = parser.get_query().get_select_expressions();
-
-	// Setup the select expressions.
-	for (auto& se : se_list)
-		{
-			auto* node = se.get();
-			select_exprs.push_back(select_group_type{node, nullptr});
-		}
-	}
-
-			tuple_type fetch_one()
+		if (query_data.size() == 0)
 			{
-				return solve_once();
+				return;
 			}
 
+		parser.parse();
+
+		auto& se_list = parser.get_query().get_select_expressions();
+
+		// Setup the select expressions.
+		for (auto& se : se_list)
+			{
+				auto* node = se.get();
+				select_exprs.push_back(select_group_type
+					{
+					node, nullptr
+					});
+			}
+	}
+
+	tuple_type fetch_one()
+	{
+		return solve_once();
+	}
 
 };
 

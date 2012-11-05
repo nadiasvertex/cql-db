@@ -107,6 +107,23 @@ TEST_F(QueryParserTest, CanParseSelectColumns)
   EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[1]->get_type());
 }
 
+TEST_F(QueryParserTest, CanParseSelectTableDotColumn)
+{
+  using namespace lattice::cell;
+
+  std::string query_data("select t1.c1, t1.c2");
+  query_parser qp(*db, query_data);
+
+  EXPECT_TRUE(qp.parse());
+
+  // Expect two select expressions.
+  auto& se = qp.get_query().get_select_expressions();
+  EXPECT_EQ(2, se.size());
+
+  EXPECT_EQ(actions::node::node_type::TABLE_REF, se[0]->get_type());
+  EXPECT_EQ(actions::node::node_type::TABLE_REF, se[1]->get_type());
+}
+
 TEST_F(QueryParserTest, CanParseSelectColumnAndNumber)
 {
   using namespace lattice::cell;
