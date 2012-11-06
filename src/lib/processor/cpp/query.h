@@ -6,6 +6,8 @@
 
 #include <processor/cpp/metadata.h>
 #include <processor/cpp/query_parser.h>
+#include <processor/cpp/evaluator.h>
+
 
 #include <jit/jit-plus.h>
 
@@ -13,8 +15,7 @@ namespace lattice
 {
 namespace processor
 {
-
-class select_expr_evaluator;
+ 
 typedef std::unique_ptr<select_expr_evaluator> select_evaluator_type;
 typedef std::vector<select_evaluator_type> select_evaluator_list_type;
 
