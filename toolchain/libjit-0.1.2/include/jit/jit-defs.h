@@ -39,21 +39,21 @@ typedef short jit_short;
 typedef unsigned short jit_ushort;
 typedef int jit_int;
 typedef unsigned int jit_uint;
-typedef int jit_nint;
-typedef unsigned int jit_nuint;
+typedef long jit_nint;
+typedef unsigned long jit_nuint;
 #if defined(__cplusplus) && defined(__GNUC__)
-typedef long long jit_long;
-typedef unsigned long long jit_ulong;
+typedef long jit_long;
+typedef unsigned long jit_ulong;
 #else
-typedef long long jit_long;
-typedef unsigned long long jit_ulong;
+typedef long jit_long;
+typedef unsigned long jit_ulong;
 #endif
 typedef float jit_float32;
 typedef double jit_float64;
 typedef long double jit_nfloat;
 typedef void *jit_ptr;
 
-#define	JIT_NATIVE_INT32 1
+#define	JIT_NATIVE_INT64 1
 
 
 #if defined(__cplusplus) && defined(__GNUC__)
