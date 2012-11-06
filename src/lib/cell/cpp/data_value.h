@@ -25,6 +25,7 @@ class data_value
 
 	bool has_value;
 
+public:
 	union
 	{
 		std::int16_t i16;
@@ -59,6 +60,14 @@ public:
 	 * Cleans up resources, like string pointers.
 	 */
 	~data_value();
+
+	/**
+	 * Provides the raw type information for this data value.
+	 */
+	column::data_type get_type() const
+	{
+		return type;
+	}
 
 	/**
 	 * Set the value of the data contained.

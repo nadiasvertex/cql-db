@@ -5,8 +5,8 @@
  *      Author: cnelson
  */
 
-#ifndef __LATTICE_CELL_PARSER_NODES_H__
-#define __LATTICE_CELL_PARSER_NODES_H__
+#ifndef __LATTICE_PROCESSOR_PARSER_NODES_H__
+#define __LATTICE_PROCESSOR_PARSER_NODES_H__
 
 #include <memory>
 #include <stack>
@@ -15,13 +15,9 @@
 
 #include <pegtl.hh>
 
-namespace lattice
-{
-namespace cell
-{
-
-namespace actions
-{
+namespace lattice {
+namespace processor {
+namespace actions {
 
 using namespace pegtl;
 
@@ -111,9 +107,9 @@ public:
  */
 class literal: public node
 {
-	data_value value;
+	cell::data_value value;
 public:
-	literal(const data_value& v) :
+	literal(const cell::data_value& v) :
 			node(node::node_type::LITERAL), value(v)
 	{
 	}
@@ -122,7 +118,7 @@ public:
 	{
 	}
 
-	const data_value& get_value() const
+	const cell::data_value& get_value() const
 	{
 		return value;
 	}
@@ -174,7 +170,7 @@ public:
 };
 
 } // namespace actions
-} // namespace cell
+} // namespace processor
 } // namespace lattice
 
-#endif // __LATTICE_CELL_PARSER_NODES_H__
+#endif // __LATTICE_PROCESSOR_PARSER_NODES_H__

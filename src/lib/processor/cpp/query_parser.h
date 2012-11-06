@@ -1,14 +1,16 @@
-#ifndef __LATTICE_CELL_QUERY_PARSER_H__
-#define __LATTICE_CELL_QUERY_PARSER_H__
+#ifndef __LATTICE_PROCESSOR_QUERY_PARSER_H__
+#define __LATTICE_PROCESSOR_QUERY_PARSER_H__
 
 #include <vector>
 
-#include <cell/cpp/parser_actions.h>
+#include <processor/cpp/metadata.h>
+#include <processor/cpp/parser_actions.h>
+
 #include <pegtl.hh>
 
 namespace lattice
 {
-namespace cell
+namespace processor
 {
 
 namespace recognizer
@@ -211,13 +213,13 @@ public:
 
 
 private:
-  database&   db;
+  metadata&   md;
   std::string query_data;
   actions::query_stack_type qs;
 
 public:
-  query_parser(database& _db, std::string _query_data) :
-      db(_db), query_data(_query_data)
+  query_parser(metadata& _md, std::string _query_data) :
+      md(_md), query_data(_query_data)
   {
   }
 
@@ -236,7 +238,7 @@ public:
 
 };
 
-} // namespace cell
+} // namespace processor
 } // namespace lattice
 
-#endif // __LATTICE_CELL_QUERY_PARSER_H__
+#endif // __LATTICE_PROCESSOR_QUERY_PARSER_H__

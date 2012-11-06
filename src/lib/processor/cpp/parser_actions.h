@@ -5,23 +5,17 @@
  *      Author: cnelson
  */
 
-#ifndef __LATTICE_CELL_PARSER_ACTIONS_H__
-#define __LATTICE_CELL_PARSER_ACTIONS_H__
+#ifndef __LATTICE_PROCESSOR_PARSER_ACTIONS_H__
+#define __LATTICE_PROCESSOR_PARSER_ACTIONS_H__
 
 #include <algorithm>
 #include <vector>
 
-#include <cell/cpp/predicate.h>
-#include <cell/cpp/database.h>
-#include <cell/cpp/parser_nodes.h>
+#include <processor/cpp/parser_nodes.h>
 
-namespace lattice
-{
-namespace cell
-{
-
-namespace actions
-{
+namespace lattice {
+namespace processor {
+namespace actions {
 
 using namespace pegtl;
 
@@ -55,7 +49,7 @@ public:
 		/**
 		 * The table expression involved in the join.
 		 */
-		 handle tbl_expr;
+		handle tbl_expr;
 	public:
 		join(join_type _jt) :
 				jt(_jt)
@@ -69,9 +63,9 @@ public:
 		 * @param te: The table expression.
 		 */
 		void set_table_expr(table_expr *te)
-			{
-				tbl_expr = handle(te);
-			}
+		{
+			tbl_expr = handle(te);
+		}
 	};
 
 	/** Type for storing a list of joins. */
@@ -246,7 +240,6 @@ struct set_table_name: action_base<set_table_name>
 	}
 };
 
-
 /**
  * Pushes a new literal string value onto the stack.
  */
@@ -255,8 +248,8 @@ struct push_literal_str: action_base<push_literal_str>
 	static void apply(const std::string& m, node_list_type& s,
 			query_stack_type& qs)
 	{
-		data_value v;
-		v.set_value(column::data_type::varchar, m);
+		cell::data_value v;
+		v.set_value(cell::column::data_type::varchar, m);
 		s.push(node_handle_type(new literal(v)));
 	}
 };
@@ -269,15 +262,15 @@ struct push_literal_num: action_base<push_literal_num>
 	static void apply(const std::string& m, node_list_type& s,
 			query_stack_type& qs)
 	{
-		data_value v;
+		cell::data_value v;
 
 		if (m.size() > 9)
 			{
-				v.set_value(column::data_type::bigint, m);
+				v.set_value(cell::column::data_type::bigint, m);
 			}
 		else
 			{
-				v.set_value(column::data_type::integer, m);
+				v.set_value(cell::column::data_type::integer, m);
 			}
 
 		s.push(node_handle_type(new literal(v)));
@@ -297,26 +290,26 @@ struct push_binop: action_base<push_binop>
 
 		switch (m[0])
 			{
-		case '+':
-			type = node::node_type::OP_ADD;
+			case '+':
+				type = node::node_type::OP_ADD;
 			break;
-		case '-':
-			type = node::node_type::OP_SUB;
+			case '-':
+				type = node::node_type::OP_SUB;
 			break;
-		case '*':
-			type = node::node_type::OP_MUL;
+			case '*':
+				type = node::node_type::OP_MUL;
 			break;
-		case '/':
-			type = node::node_type::OP_DIV;
+			case '/':
+				type = node::node_type::OP_DIV;
 			break;
-		case '%':
-			type = node::node_type::OP_MOD;
+			case '%':
+				type = node::node_type::OP_MOD;
 			break;
-		case '|':
-			if (m[1] == '|')
-				{
-					type = node::node_type::OP_CAT;
-				}
+			case '|':
+				if (m[1] == '|')
+					{
+						type = node::node_type::OP_CAT;
+					}
 			break;
 			}
 
@@ -344,7 +337,7 @@ struct select: action_base<select>
 };
 
 } // namespace actions
-} // namespace cell
+} // namespace processor
 } // namespace lattice
 
-#endif // __LATTICE_CELL_PARSER_ACTIONS_H__
+#endif // __LATTICE_PROCESSOR_PARSER_ACTIONS_H__

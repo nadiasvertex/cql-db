@@ -2,6 +2,7 @@
 #define __LATTICE_CELL_COLUMN_H__
 
 #include <memory>
+#include <string>
 
 namespace lattice
 {
