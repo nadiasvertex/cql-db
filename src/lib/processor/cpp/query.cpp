@@ -41,7 +41,11 @@ query::tuple_type query::solve_once()
 		{
 			void *output;
 			auto result = se->apply(&output, nullptr);
-			//tpl.push_back(result.to_string());
+
+			std::string* value = static_cast<std::string*>(output);
+			tpl.push_back(*value);
+
+			delete value;
 		}
 
 	return tpl;

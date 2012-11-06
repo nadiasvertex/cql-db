@@ -3,6 +3,52 @@
 namespace lattice {
 namespace processor {
 
+static std::string*
+convert_value_to_string(cell::column::data_type type, void* value)
+{
+	cell::data_value dv;
+
+	switch (type)
+		{
+		case cell::column::data_type::smallint: {
+			auto* i16 = static_cast<std::int16_t*>(value);
+			dv.set_value(type, *i16);
+			return new std::string(dv.to_string());
+		}
+
+		case cell::column::data_type::integer: {
+			auto* i32 = static_cast<std::int32_t*>(value);
+			dv.set_value(type, *i32);
+			return new std::string(dv.to_string());
+		}
+
+		case cell::column::data_type::bigint: {
+			auto* i64 = static_cast<std::int64_t*>(value);
+			dv.set_value(type, *i64);
+			return new std::string(dv.to_string());
+		}
+
+		case cell::column::data_type::real: {
+			auto* f32 = static_cast<float*>(value);
+			dv.set_value(type, *f32);
+			return new std::string(dv.to_string());
+		}
+
+		case cell::column::data_type::double_precision: {
+			auto* f64 = static_cast<float*>(value);
+			dv.set_value(type, *f64);
+			return new std::string(dv.to_string());
+		}
+
+		case cell::column::data_type::varchar:
+			return new std::string(*static_cast<std::string*>(value));
+		}
+
+	throw std::invalid_argument(
+			"unknown value type when converting value to string.");
+
+}
+
 select_expr_evaluator::select_expr_evaluator(metadata& _md,
 		jit_context& context, actions::node* _se) :
 		md(_md), jit_function(context), se(_se)
@@ -13,8 +59,12 @@ select_expr_evaluator::select_expr_evaluator(metadata& _md,
 
 void select_expr_evaluator::build()
 {
-	auto results = evaluate(se);
-	insn_return(results);
+	// Evaluate the select expression.
+	auto temp = evaluate(se);
+	// Turn the result into a string
+	auto results = gen_string_conversion(se, temp);
+	// Return the string.
+	insn_return(std::get<0>(results));
 }
 
 jit_type_t select_expr_evaluator::create_signature()
@@ -83,7 +133,7 @@ jit_value select_expr_evaluator::value_of(const cell::column::data_type type)
  *
  * @param node: The leaf node to evaluate.
  */
-jit_value select_expr_evaluator::eval_leaf(actions::node* node)
+auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
 {
 	switch (node->get_type())
 		{
@@ -95,7 +145,8 @@ jit_value select_expr_evaluator::eval_leaf(actions::node* node)
 						throw std::invalid_argument(
 								"node claims to be a literal value, but dynamic cast yields nullptr.");
 					}
-				return literal_value_of(l->get_value());
+				auto& v = l->get_value();
+				return std::make_tuple(literal_value_of(v), v.get_type());
 			}
 
 		case actions::node::node_type::COLUMN_REF:
@@ -104,23 +155,47 @@ jit_value select_expr_evaluator::eval_leaf(actions::node* node)
 		}
 }
 
-jit_value select_expr_evaluator::gen_constant_binop(actions::node* node,
-		jit_value& left, jit_value& right)
+auto select_expr_evaluator::gen_constant_binop(actions::node* node,
+		value_type& left, value_type& right) -> value_type
 {
+	auto& l = std::get < 0 > (left);
+	auto& r = std::get < 0 > (right);
+	auto& t = std::get < 1 > (left);
+
 	switch (node->get_type())
 		{
 		case actions::node::node_type::OP_ADD:
-			return left + right;
+			return std::make_tuple(l + r, t);
 		case actions::node::node_type::OP_SUB:
-			return left - right;
+			return std::make_tuple(l - r, t);
 		case actions::node::node_type::OP_MUL:
-			return left * right;
+			return std::make_tuple(l * r, t);
 		case actions::node::node_type::OP_DIV:
-			return left / right;
+			return std::make_tuple(l / r, t);
 		}
 }
 
-jit_value select_expr_evaluator::eval_binop(actions::node* node)
+auto select_expr_evaluator::gen_string_conversion(actions::node* node,
+		value_type& value) -> value_type
+{
+	auto type = std::get < 1 > (value);
+	auto input = std::get < 0 > (value);
+
+	jit_value args[] =
+		{
+		new_constant((jit_int)type, jit_type_int),
+		insn_address_of(input)
+		};
+
+	auto result = insn_call_native("convert_value_to_string",
+			reinterpret_cast<void*>(convert_value_to_string),
+			signature_helper(jit_type_void_ptr, jit_type_int, jit_type_void_ptr,
+					end_params), (_jit_value**)args, 2, 0);
+
+	return std::make_tuple(result, cell::column::data_type::varchar);
+}
+
+auto select_expr_evaluator::eval_binop(actions::node* node) -> value_type
 {
 	actions::binop* op = dynamic_cast<actions::binop*>(node);
 
@@ -137,13 +212,14 @@ jit_value select_expr_evaluator::eval_binop(actions::node* node)
 	auto lvalue = evaluate(left_node);
 	auto rvalue = evaluate(right_node);
 
-	if (lvalue.is_constant() && rvalue.is_constant())
+	if (std::get < 0 > (lvalue).is_constant()
+			&& std::get < 0 > (rvalue).is_constant())
 		{
 			return gen_constant_binop(node, lvalue, rvalue);
 		}
 }
 
-jit_value select_expr_evaluator::evaluate(actions::node* node)
+auto select_expr_evaluator::evaluate(actions::node* node) -> value_type
 {
 	switch (node->get_type())
 		{

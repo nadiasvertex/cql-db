@@ -1,6 +1,8 @@
 #ifndef __LATTICE_PROCESSOR_EVALUATOR_H__
 #define __LATTICE_PROCESSOR_EVALUATOR_H__
 
+#include <tuple>
+
 #include <jit/jit-plus.h>
 #include <processor/cpp/query_parser.h>
 
@@ -9,6 +11,10 @@ namespace processor {
 
 class select_expr_evaluator: public jit_function
 {
+public:
+	typedef std::tuple<jit_value, cell::column::data_type> value_type;
+
+private:
 	metadata& md;
 	actions::node* se;
 
@@ -43,7 +49,7 @@ protected:
 	 *
 	 * @param node: The leaf node to evaluate.
 	 */
-	jit_value eval_leaf(actions::node* node);
+	auto eval_leaf(actions::node* node) -> value_type;
 
 	/**
 	 * Generates a constant binary operation. We assume that the values
@@ -56,8 +62,28 @@ protected:
 	 * @return: A new value that represents the output of the
 	 *          instruction.
 	 */
-	jit_value gen_constant_binop(actions::node* node, jit_value& left,
-			jit_value& right);
+	auto gen_constant_binop(actions::node* node, value_type& left,
+			value_type& right) -> value_type;
+
+	/**
+	 * Generates a conversion to a std::string pointer.
+	 *
+	 * @param node: The node to generate a conversion for.
+	 * @param left: The value to convert.
+	 *
+	 * @return: A new value that represents the output of the
+	 *          instruction.
+	 *
+	 * @remarks:
+	 *
+	 * This calls a native C++ function which takes the instruction value,
+	 * temporarly boxes it in a data_value, then calls to_string() on that
+	 * value. The result is copied into a newed-up string, which becomes
+	 * the output of this function.
+	 *
+	 */
+	auto gen_string_conversion(actions::node* node,
+			value_type& value) -> value_type;
 
 	/**
 	 * Evaluates a binary operation.
@@ -67,7 +93,7 @@ protected:
 	 * @returns: A new value that represents the output of the
 	 *           instruction.
 	 */
-	jit_value eval_binop(actions::node* node);
+	auto eval_binop(actions::node* node) -> value_type;
 
 	/**
 	 * Top level evaluator. Evaluates this node, returning a single jit value
@@ -78,7 +104,7 @@ protected:
 	 * @returns: A new value that represents the output of the
 	 *           instruction.
 	 */
-	jit_value evaluate(actions::node* node);
+	auto evaluate(actions::node* node) -> value_type;
 };
 
 } // end namespace processor
