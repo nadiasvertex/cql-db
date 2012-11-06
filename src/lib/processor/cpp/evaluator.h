@@ -1,6 +1,7 @@
 #ifndef __LATTICE_PROCESSOR_EVALUATOR_H__
 #define __LATTICE_PROCESSOR_EVALUATOR_H__
 
+#include <cstdint>
 #include <tuple>
 
 #include <jit/jit-plus.h>
@@ -42,6 +43,14 @@ protected:
 	 * @param type: The data type.
 	 */
 	jit_value value_of(const cell::column::data_type type);
+
+	/**
+	 * Returns the size in bytes of the data type.
+	 *
+	 * @param type: The data type to get the size of.
+	 */
+	std::uint8_t size_in_bytes(
+			const cell::column::data_type type) const;
 
 	/**
 	 * Evaluates a leaf node, and provides a jit value that

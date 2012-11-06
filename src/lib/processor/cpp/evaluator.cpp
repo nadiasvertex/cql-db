@@ -1,3 +1,6 @@
+#include <cstdio>
+#include <jit/jit-dump.h>
+
 #include <processor/cpp/evaluator.h>
 
 namespace lattice {
@@ -65,6 +68,8 @@ void select_expr_evaluator::build()
 	auto results = gen_string_conversion(se, temp);
 	// Return the string.
 	insn_return(std::get<0>(results));
+
+	jit_dump_function(stdout, raw(), "select_expr");
 }
 
 jit_type_t select_expr_evaluator::create_signature()
@@ -127,6 +132,33 @@ jit_value select_expr_evaluator::value_of(const cell::column::data_type type)
 			"unknown value type when constructing select expression evaluator.");
 }
 
+std::uint8_t select_expr_evaluator::size_in_bytes(const cell::column::data_type type) const
+{
+	switch (type)
+		{
+		case cell::column::data_type::smallint:
+			return 2;
+
+		case cell::column::data_type::integer:
+			return 4;
+
+		case cell::column::data_type::bigint:
+			return 8;
+
+		case cell::column::data_type::real:
+			return 4;
+
+		case cell::column::data_type::double_precision:
+			return 8;
+
+		case cell::column::data_type::varchar:
+			return sizeof(void*);
+		}
+
+	throw std::invalid_argument(
+			"unknown value type when constructing select expression evaluator.");
+}
+
 /**
  * Evaluates a leaf node, and provides a jit value that
  * represents the evaluation of that leaf node.
@@ -181,11 +213,14 @@ auto select_expr_evaluator::gen_string_conversion(actions::node* node,
 	auto type = std::get < 1 > (value);
 	auto input = std::get < 0 > (value);
 
-	jit_value args[] =
-		{
-		new_constant((jit_int)type, jit_type_int),
-		insn_address_of(input)
-		};
+	jit_value args[2];
+
+	auto t1 = value_of(type);
+	jit_insn_store(raw(), t1.raw(), input.raw());
+
+	auto t2 = insn_address_of(t1);
+	args[0] = new_constant((jit_int)type, jit_type_int);
+	args[1] = t2;
 
 	auto result = insn_call_native("convert_value_to_string",
 			reinterpret_cast<void*>(convert_value_to_string),

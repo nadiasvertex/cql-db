@@ -40,12 +40,12 @@ query::tuple_type query::solve_once()
 	for (auto& se : select_exprs)
 		{
 			void *output;
-			auto result = se->apply(&output, nullptr);
+			auto result = se->apply(nullptr, &output);
 
 			std::string* value = static_cast<std::string*>(output);
 			tpl.push_back(*value);
 
-			delete value;
+			//delete value;
 		}
 
 	return tpl;
