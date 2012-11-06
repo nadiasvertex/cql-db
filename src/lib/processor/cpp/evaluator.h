@@ -61,8 +61,8 @@ protected:
 	auto eval_leaf(actions::node* node) -> value_type;
 
 	/**
-	 * Generates a constant binary operation. We assume that the values
-	 * are simple constant values that don't require fetching.
+	 * Generates a simple binary operation. We assume that the values
+	 * are already unboxed.
 	 *
 	 * @param node: The node to generate a binop for.
 	 * @param left: The left input value.
@@ -71,7 +71,7 @@ protected:
 	 * @return: A new value that represents the output of the
 	 *          instruction.
 	 */
-	auto gen_constant_binop(actions::node* node, value_type& left,
+	auto gen_unboxed_binop(actions::node* node, value_type& left,
 			value_type& right) -> value_type;
 
 	/**

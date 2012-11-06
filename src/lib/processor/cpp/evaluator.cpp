@@ -187,7 +187,7 @@ auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
 		}
 }
 
-auto select_expr_evaluator::gen_constant_binop(actions::node* node,
+auto select_expr_evaluator::gen_unboxed_binop(actions::node* node,
 		value_type& left, value_type& right) -> value_type
 {
 	auto& l = std::get < 0 > (left);
@@ -247,11 +247,8 @@ auto select_expr_evaluator::eval_binop(actions::node* node) -> value_type
 	auto lvalue = evaluate(left_node);
 	auto rvalue = evaluate(right_node);
 
-	if (std::get < 0 > (lvalue).is_constant()
-			&& std::get < 0 > (rvalue).is_constant())
-		{
-			return gen_constant_binop(node, lvalue, rvalue);
-		}
+	return gen_unboxed_binop(node, lvalue, rvalue);
+
 }
 
 auto select_expr_evaluator::evaluate(actions::node* node) -> value_type

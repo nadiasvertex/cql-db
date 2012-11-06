@@ -314,9 +314,9 @@ struct push_binop: action_base<push_binop>
 			}
 
 		// Pop the two top nodes so they can be joined.
-		auto left = s.top().release();
-		s.pop();
 		auto right = s.top().release();
+		s.pop();
+		auto left = s.top().release();
 		s.pop();
 
 		// Replace the top node.
