@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <processor/cpp/metadata.h>
-#include <processor/cpp/query_parser.h>
 #include <processor/cpp/evaluator.h>
 
 
@@ -33,12 +32,6 @@ private:
 	 * The jit context for processing queries.
 	 */
 	jit_context ctx;
-
-	/**
-	 * The parser, also stores the AST for traversal
-	 * by the expression solver.
-	 */
-	query_parser parser;
 
 	/**
 	 * A list of

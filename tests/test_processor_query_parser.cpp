@@ -286,3 +286,41 @@ TEST_F(QueryParserTest, CanParseRightOuterJoin)
 	EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
 }
 
+TEST_F(QueryParserTest, CanGetColumnVector)
+{
+	using namespace lattice::processor;
+
+	std::string query_data("select test2.c3, c1, c2, c3");
+	query_parser qp(*md, query_data);
+
+	EXPECT_TRUE(qp.parse());
+
+	// Expect two select expressions.
+	auto cv = qp.get_query().get_column_vector();
+	ASSERT_EQ(4, cv.size());
+
+	EXPECT_EQ("test2.c3", cv[0]);
+	EXPECT_EQ("c1", cv[1]);
+	EXPECT_EQ("c2", cv[2]);
+	EXPECT_EQ("c3", cv[3]);
+
+}
+
+TEST_F(QueryParserTest, CanGetColumnVector2)
+{
+	using namespace lattice::processor;
+
+	std::string query_data("select c2+c3, c1, c2, c4, c3");
+	query_parser qp(*md, query_data);
+
+	EXPECT_TRUE(qp.parse());
+
+	// Expect two select expressions.
+	auto cv = qp.get_query().get_column_vector();
+	ASSERT_EQ(4, cv.size());
+
+	EXPECT_EQ("c2", cv[0]);
+	EXPECT_EQ("c3", cv[1]);
+	EXPECT_EQ("c1", cv[2]);
+	EXPECT_EQ("c4", cv[3]);
+}

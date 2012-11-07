@@ -9,6 +9,8 @@
 #define __LATTICE_PROCESSOR_PARSER_ACTIONS_H__
 
 #include <algorithm>
+#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include <processor/cpp/parser_nodes.h>
@@ -132,6 +134,12 @@ private:
 	 */
 	select_list_type select_expressions;
 
+	/**
+	 * Provides a mapping between column names and column indexes. Columns
+	 * are mapped to indexes based on their first mention.
+	 */
+	std::unordered_map<std::string, int> column_map;
+
 public:
 	/** The table expression for this query. */
 	table_expr table_expression;
@@ -160,6 +168,47 @@ public:
 	{
 		return select_expressions;
 	}
+
+	/**
+	 * Finds the index of the column. If the column
+	 * doesn't have an index associated, a new one is
+	 * assigned.
+	 *
+	 * @param name: The name of the column.
+	 *
+	 * @returns: The column's index in the row.
+	 */
+	int get_column_index(const std::string& name)
+	{
+		auto pos = column_map.find(name);
+		if (pos==column_map.end())
+			{
+				pos = column_map.insert(std::make_pair(name, column_map.size())).first;
+			}
+
+		return pos->second;
+	}
+
+	/**
+	 * Provides a list of ordered column names, in the order they appear in
+	 * the query.
+	 */
+	std::vector<std::string> get_column_vector()
+		{
+			std::map<int, std::string> names;
+			for(auto& n : column_map)
+				{
+					names[n.second] = n.first;
+				}
+
+			std::vector<std::string> col_list;
+			for(auto& p : names)
+				{
+					col_list.push_back(p.second);
+				}
+
+			return col_list;
+		}
 };
 
 /** A handle to a single query. */
@@ -176,7 +225,8 @@ struct push_column_ref: action_base<push_column_ref>
 	static void apply(const std::string& m, node_list_type& s,
 			query_stack_type& qs)
 	{
-		s.push(node_handle_type(new column_ref(m)));
+		auto& q = qs.top();
+		s.push(node_handle_type(new column_ref(m, q->get_column_index(m))));
 	}
 };
 
@@ -204,8 +254,13 @@ struct push_deref: action_base<push_deref>
 	{
 		auto p = m.find('.');
 
-		auto* tbl_ref = new table_ref(m.substr(0, p));
-		auto* col_ref = new column_ref(m.substr(p + 1, m.size() - p));
+		auto table_name = m.substr(0, p);
+		auto column_name = m.substr(p + 1, m.size() - p);
+
+
+		auto& q = qs.top();
+		auto* tbl_ref = new table_ref(table_name);
+		auto* col_ref = new column_ref(column_name, q->get_column_index(m));
 
 		tbl_ref->set_column_ref(col_ref);
 

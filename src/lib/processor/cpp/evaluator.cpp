@@ -74,7 +74,7 @@ void select_expr_evaluator::build()
 	// Turn the result into a string
 	auto results = gen_string_conversion(se, temp);
 	// Return the string.
-	insn_return(std::get < 0 > (results));
+	insn_return(std::get<0>(results));
 
 	jit_dump_function(stdout, raw(), "select_expr");
 }
@@ -184,9 +184,26 @@ auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
 			}
 
 		case actions::node::node_type::COLUMN_REF:
+			{
+				auto* cr = dynamic_cast<actions::column_ref*>(node);
+				if (cr == nullptr)
+					{
+						throw std::invalid_argument(
+								"node claims to be a column reference, but dynamic cast yields nullptr.");
+					}
+
+				auto col_name = cr->get_name();
+
+
+			}
+		break;
+
 		case actions::node::node_type::TABLE_REF:
 		break;
 		}
+
+	throw std::invalid_argument(
+				"unknown leaf type in eval_leaf.");
 }
 
 auto select_expr_evaluator::gen_column_fetch(const cell::column::data_type type,
@@ -207,23 +224,29 @@ auto select_expr_evaluator::gen_column_fetch(const cell::column::data_type type,
 
 	switch (type)
 		{
-		   case cell::column::data_type::smallint:
+		case cell::column::data_type::smallint:
 			return FETCH(int16, jit_type_short);
+			/* no break */
 
 			case cell::column::data_type::integer:
 			return FETCH(int32, jit_type_int);
+			/* no break */
 
 			case cell::column::data_type::bigint:
 			return FETCH(int64, jit_type_long);
+			/* no break */
 
 			case cell::column::data_type::real:
 			return FETCH(float, jit_type_float32);
+			/* no break */
 
 			case cell::column::data_type::double_precision:
 			return FETCH(double, jit_type_float64);
+			/* no break */
 
 			case cell::column::data_type::varchar:
 			return FETCH(string, jit_type_void_ptr);
+			/* no break */
 		}
 
 #undef FETCH
@@ -235,9 +258,9 @@ auto select_expr_evaluator::gen_column_fetch(const cell::column::data_type type,
 auto select_expr_evaluator::gen_unboxed_binop(actions::node* node,
 		value_type& left, value_type& right) -> value_type
 {
-	auto& l = std::get < 0 > (left);
-	auto& r = std::get < 0 > (right);
-	auto& t = std::get < 1 > (left);
+	auto& l = std::get<0>(left);
+	auto& r = std::get<0>(right);
+	auto& t = std::get<1>(left);
 
 	switch (node->get_type())
 		{
@@ -255,8 +278,8 @@ auto select_expr_evaluator::gen_unboxed_binop(actions::node* node,
 auto select_expr_evaluator::gen_string_conversion(actions::node* node,
 		value_type& value) -> value_type
 {
-	auto type = std::get < 1 > (value);
-	auto input = std::get < 0 > (value);
+	auto type = std::get<1>(value);
+	auto input = std::get<0>(value);
 
 	jit_value args[2];
 

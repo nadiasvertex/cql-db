@@ -129,15 +129,22 @@ public:
  */
 class column_ref: public node
 {
+	int column_index;
+
 	std::string name;
 public:
-	column_ref(const std::string& n) :
-			node(node::node_type::COLUMN_REF), name(n)
+	column_ref(const std::string& n, int index) :
+			node(node::node_type::COLUMN_REF), name(n), column_index(index)
 	{
 	}
 
 	virtual ~column_ref()
 	{
+	}
+
+	std::string& get_name()
+	{
+		return name;
 	}
 };
 
@@ -160,12 +167,22 @@ public:
 	{
 	}
 
+	std::string& get_name()
+		{
+			return name;
+		}
+
 	/**
 	 * Sets the column reference.
 	 */
 	void set_column_ref(column_ref *cr)
 	{
 		col_ref = std::unique_ptr < column_ref > (cr);
+	}
+
+	column_ref* get_column_ref()
+	{
+		return col_ref.get();
 	}
 };
 

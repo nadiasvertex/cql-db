@@ -3,20 +3,25 @@
 
 #include <common/cpp/expected.h>
 #include <processor/cpp/query.h>
-#include <processor/cpp/evaluator.h>
+#include <processor/cpp/query_parser.h>
 
 namespace lattice {
 namespace processor {
 
 query::query(metadata& _md, const std::string& query_data) :
-		md(_md), parser(_md, query_data)
+		md(_md)
 {
 	if (query_data.size() == 0)
 		{
 			return;
 		}
 
+	query_parser parser(md, query_data);
+
 	parser.parse();
+
+	// Get an ordered list of column names.
+	auto column_list = parser.get_query().get_column_vector();
 
 	auto& se_list = parser.get_query().get_select_expressions();
 
