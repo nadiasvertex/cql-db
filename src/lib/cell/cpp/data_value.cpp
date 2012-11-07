@@ -8,6 +8,8 @@ namespace lattice
 namespace cell
 {
 
+typedef std::uint32_t varchar_size_type;
+
 /**
  * Provides a way to set a bit on
  * exit from a scope.
@@ -50,7 +52,7 @@ data_value::data_value(const data_value& o)
 
 data_value::~data_value()
 {
-	if (type == column::data_type::varchar && value.s != nullptr)
+	if (type == column::data_type::varchar && has_value && value.s != nullptr)
 		{
 			delete value.s;
 		}
@@ -154,7 +156,7 @@ int data_value::cmp(page_cursor& cursor) const
 		break;
 
 	case column::data_type::bigint:
-		return cursor.cmp(value.i32);
+		return cursor.cmp(value.i64);
 		break;
 
 	case column::data_type::real:
@@ -183,7 +185,7 @@ static std::size_t _write(const T& value, std::uint8_t* buffer)
 template<>
 std::size_t _write<>(const std::string& value, std::uint8_t* buffer)
 {
-	std::uint32_t size = value.size();
+	varchar_size_type size = value.size();
 	_write(size, buffer);
 
 	std::memcpy(buffer + sizeof(size), value.c_str(), size);
@@ -202,7 +204,7 @@ std::size_t data_value::write(std::uint8_t* buffer)
 		return _write(value.i32, buffer);
 
 	case column::data_type::bigint:
-		return _write(value.i32, buffer);
+		return _write(value.i64, buffer);
 
 	case column::data_type::real:
 		return _write(value.f32, buffer);
@@ -227,7 +229,7 @@ static std::size_t _read(T& value, std::uint8_t* buffer)
 template<>
 std::size_t _read<>(std::string& value, std::uint8_t* buffer)
 {
-	std::uint32_t size = 0;
+	varchar_size_type size = 0;
 	_read(size, buffer);
 
 	value.assign(static_cast<char*>(static_cast<void*>(buffer + sizeof(size))),
@@ -249,7 +251,7 @@ std::size_t data_value::read(std::uint8_t* buffer)
 		return _read(value.i32, buffer);
 
 	case column::data_type::bigint:
-		return _read(value.i32, buffer);
+		return _read(value.i64, buffer);
 
 	case column::data_type::real:
 		return _read(value.f32, buffer);
@@ -278,7 +280,7 @@ static std::size_t _write(const T& value, std::ostream& buffer)
 template<>
 std::size_t _write<>(const std::string& value, std::ostream& buffer)
 {
-	std::uint32_t size = value.size();
+	varchar_size_type size = value.size();
 	_write(size, buffer);
 
 	buffer.write(value.c_str(), size);
@@ -322,7 +324,7 @@ static std::size_t _read(T& value, std::istream& buffer)
 template<>
 std::size_t _read<>(std::string& value, std::istream& buffer)
 {
-	std::uint32_t size = value.size();
+	varchar_size_type size = value.size();
 	_read(size, buffer);
 
 	char _buffer[size];
