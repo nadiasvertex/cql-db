@@ -46,7 +46,6 @@ convert_value_to_string(cell::column::data_type type, void* value)
 		case cell::column::data_type::varchar:
 			return new std::string(*static_cast<std::string*>(value));
 		}
-
 	throw std::invalid_argument(
 			"unknown value type when converting value to string.");
 
@@ -69,7 +68,7 @@ void select_expr_evaluator::build()
 	// Return the string.
 	insn_return(std::get<0>(results));
 
-	jit_dump_function(stdout, raw(), "select_expr");
+	//jit_dump_function(stdout, raw(), "select_expr");
 }
 
 jit_type_t select_expr_evaluator::create_signature()
@@ -159,12 +158,6 @@ std::uint8_t select_expr_evaluator::size_in_bytes(const cell::column::data_type 
 			"unknown value type when constructing select expression evaluator.");
 }
 
-/**
- * Evaluates a leaf node, and provides a jit value that
- * represents the evaluation of that leaf node.
- *
- * @param node: The leaf node to evaluate.
- */
 auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
 {
 	switch (node->get_type())

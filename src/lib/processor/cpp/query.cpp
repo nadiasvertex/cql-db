@@ -45,7 +45,7 @@ query::tuple_type query::solve_once()
 			std::string* value = static_cast<std::string*>(output);
 			tpl.push_back(*value);
 
-			//delete value;
+			delete value;
 		}
 
 	return tpl;

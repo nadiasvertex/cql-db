@@ -1,0 +1,9 @@
+package lattice.processor;
+
+message Row {
+   required uint64 id   = 1;
+   required bytes  data = 2;   
+}
+
+
+
