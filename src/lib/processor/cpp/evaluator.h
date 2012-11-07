@@ -49,8 +49,7 @@ protected:
 	 *
 	 * @param type: The data type to get the size of.
 	 */
-	std::uint8_t size_in_bytes(
-			const cell::column::data_type type) const;
+	std::uint8_t size_in_bytes(const cell::column::data_type type) const;
 
 	/**
 	 * Evaluates a leaf node, and provides a jit value that
@@ -59,6 +58,18 @@ protected:
 	 * @param node: The leaf node to evaluate.
 	 */
 	auto eval_leaf(actions::node* node) -> value_type;
+
+	/**
+	 * Generates a call to the current row buffer, which fetches an
+	 * unboxed version of the data.
+	 *
+	 * @param type:         The type of data to fetch.
+	 * @param row_buffer:   The row buffer pointer passed to the select_expr
+	 * 						   evaluator.
+	 * @param column_index: The column index to fetch.
+	 */
+	auto gen_column_fetch(const cell::column::data_type type,
+			jit_value row_buffer, jit_value column_index) -> value_type;
 
 	/**
 	 * Generates a simple binary operation. We assume that the values

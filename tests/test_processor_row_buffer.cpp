@@ -134,6 +134,12 @@ TEST_F(RowBufferTest, CanGetCurrentRow)
 	rb.enqueue(row_data);
 	rb.dequeue();
 
-	ASSERT_EQ(3, rb.get_current_row().size());
+	ASSERT_EQ(columns.size(), rb.get_current_row().size());
+
+	for(auto i=0; i<columns.size(); ++i)
+		{
+			ASSERT_EQ(columns[i].type,
+					    rb.get_current_row()[i].get_type());
+		}
 }
 

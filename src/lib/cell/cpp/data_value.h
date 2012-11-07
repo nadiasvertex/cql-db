@@ -9,10 +9,8 @@
 #include <common/cpp/expected.h>
 #include <cell/cpp/column.h>
 
-namespace lattice
-{
-namespace cell
-{
+namespace lattice {
+namespace cell {
 
 class page_cursor;
 
@@ -70,6 +68,66 @@ public:
 	}
 
 	/**
+	 * Provides access to the raw value. You must not
+	 * use this unless you already know that this value
+	 * stores a value of this type.
+	 */
+	std::int16_t raw_int16_value() const
+	{
+		return value.i16;
+	}
+
+	/**
+	 * Provides access to the raw value. You must not
+	 * use this unless you already know that this value
+	 * stores a value of this type.
+	 */
+	std::int32_t raw_int32_value() const
+	{
+		return value.i32;
+	}
+
+	/**
+	 * Provides access to the raw value. You must not
+	 * use this unless you already know that this value
+	 * stores a value of this type.
+	 */
+	std::int64_t raw_int64_value() const
+	{
+		return value.i64;
+	}
+
+	/**
+	 * Provides access to the raw value. You must not
+	 * use this unless you already know that this value
+	 * stores a value of this type.
+	 */
+	float raw_float_value() const
+	{
+		return value.f32;
+	}
+
+	/**
+	 * Provides access to the raw value. You must not
+	 * use this unless you already know that this value
+	 * stores a value of this type.
+	 */
+	double raw_double_value() const
+	{
+		return value.f64;
+	}
+
+	/**
+	 * Provides access to the raw value. You must not
+	 * use this unless you already know that this value
+	 * stores a value of this type.
+	 */
+	std::string* raw_string_value() const
+	{
+		return value.s;
+	}
+
+	/**
 	 * Set the value of the data contained.
 	 *
 	 * @param t: The type of data being set.
@@ -80,31 +138,31 @@ public:
 	template<typename T>
 	void set_value(column::data_type t, const T& data)
 	{
-	type = t;
-	switch (type)
-		{
-	case column::data_type::smallint:
-		value.i16 = data;
-		break;
+		type = t;
+		switch (type)
+			{
+			case column::data_type::smallint:
+				value.i16 = data;
+			break;
 
-	case column::data_type::integer:
-		value.i32 = data;
-		break;
+			case column::data_type::integer:
+				value.i32 = data;
+			break;
 
-	case column::data_type::bigint:
-		value.i64 = data;
-		break;
+			case column::data_type::bigint:
+				value.i64 = data;
+			break;
 
-	case column::data_type::real:
-		value.f32 = data;
-		break;
+			case column::data_type::real:
+				value.f32 = data;
+			break;
 
-	case column::data_type::double_precision:
-		value.f64 = data;
-		break;
-		}
+			case column::data_type::double_precision:
+				value.f64 = data;
+			break;
+			}
 
-	has_value = true;
+		has_value = true;
 	}
 
 	/**
@@ -138,13 +196,13 @@ public:
 	data_value as_string() const;
 
 	/**
-    * Turns this data value into a std::string.
-    */
-	std::string to_string() const 
-		{
-			auto o = as_string();
-			return std::string(*o.value.s);
-		}
+	 * Turns this data value into a std::string.
+	 */
+	std::string to_string() const
+	{
+		auto o = as_string();
+		return std::string(*o.value.s);
+	}
 
 	/**
 	 * Write this data value into a buffer.
@@ -193,10 +251,14 @@ public:
 	 */
 	bool operator<(const data_value& o) const;
 
-	friend expected<data_value> operator+(const data_value& l, const data_value& r);
-	friend expected<data_value> operator-(const data_value& l, const data_value& r);
-	friend expected<data_value> operator*(const data_value& l, const data_value& r);
-	friend expected<data_value> operator/(const data_value& l, const data_value& r);
+	friend expected<data_value> operator+(const data_value& l,
+			const data_value& r);
+	friend expected<data_value> operator-(const data_value& l,
+			const data_value& r);
+	friend expected<data_value> operator*(const data_value& l,
+			const data_value& r);
+	friend expected<data_value> operator/(const data_value& l,
+			const data_value& r);
 };
 
 template<>

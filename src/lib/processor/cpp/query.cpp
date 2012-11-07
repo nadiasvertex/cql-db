@@ -40,7 +40,8 @@ query::tuple_type query::solve_once()
 	for (auto& se : select_exprs)
 		{
 			void *output;
-			auto result = se->apply(nullptr, &output);
+			void *args[1] = {nullptr};
+			auto result = se->apply(args, &output);
 
 			std::string* value = static_cast<std::string*>(output);
 			tpl.push_back(*value);

@@ -2,9 +2,12 @@
 #include <jit/jit-dump.h>
 
 #include <processor/cpp/evaluator.h>
+#include <processor/cpp/row_buffer.h>
 
 namespace lattice {
 namespace processor {
+
+#include <processor/cpp/evaluator_row_fetch.h>
 
 static std::string*
 convert_value_to_string(cell::column::data_type type, void* value)
@@ -13,35 +16,40 @@ convert_value_to_string(cell::column::data_type type, void* value)
 
 	switch (type)
 		{
-		case cell::column::data_type::smallint: {
-			auto* i16 = static_cast<std::int16_t*>(value);
-			dv.set_value(type, *i16);
-			return new std::string(dv.to_string());
-		}
+		case cell::column::data_type::smallint:
+			{
+				auto* i16 = static_cast<std::int16_t*>(value);
+				dv.set_value(type, *i16);
+				return new std::string(dv.to_string());
+			}
 
-		case cell::column::data_type::integer: {
-			auto* i32 = static_cast<std::int32_t*>(value);
-			dv.set_value(type, *i32);
-			return new std::string(dv.to_string());
-		}
+		case cell::column::data_type::integer:
+			{
+				auto* i32 = static_cast<std::int32_t*>(value);
+				dv.set_value(type, *i32);
+				return new std::string(dv.to_string());
+			}
 
-		case cell::column::data_type::bigint: {
-			auto* i64 = static_cast<std::int64_t*>(value);
-			dv.set_value(type, *i64);
-			return new std::string(dv.to_string());
-		}
+		case cell::column::data_type::bigint:
+			{
+				auto* i64 = static_cast<std::int64_t*>(value);
+				dv.set_value(type, *i64);
+				return new std::string(dv.to_string());
+			}
 
-		case cell::column::data_type::real: {
-			auto* f32 = static_cast<float*>(value);
-			dv.set_value(type, *f32);
-			return new std::string(dv.to_string());
-		}
+		case cell::column::data_type::real:
+			{
+				auto* f32 = static_cast<float*>(value);
+				dv.set_value(type, *f32);
+				return new std::string(dv.to_string());
+			}
 
-		case cell::column::data_type::double_precision: {
-			auto* f64 = static_cast<float*>(value);
-			dv.set_value(type, *f64);
-			return new std::string(dv.to_string());
-		}
+		case cell::column::data_type::double_precision:
+			{
+				auto* f64 = static_cast<float*>(value);
+				dv.set_value(type, *f64);
+				return new std::string(dv.to_string());
+			}
 
 		case cell::column::data_type::varchar:
 			return new std::string(*static_cast<std::string*>(value));
@@ -66,15 +74,15 @@ void select_expr_evaluator::build()
 	// Turn the result into a string
 	auto results = gen_string_conversion(se, temp);
 	// Return the string.
-	insn_return(std::get<0>(results));
+	insn_return(std::get < 0 > (results));
 
-	//jit_dump_function(stdout, raw(), "select_expr");
+	jit_dump_function(stdout, raw(), "select_expr");
 }
 
 jit_type_t select_expr_evaluator::create_signature()
 {
-	// Return type, followed by no parameters.
-	return signature_helper(jit_type_void_ptr, end_params);
+	// Return type, followed by 1 void* (row_buffer)
+	return signature_helper(jit_type_void_ptr, jit_type_void_ptr, end_params);
 }
 
 jit_value select_expr_evaluator::literal_value_of(const cell::data_value& o)
@@ -131,7 +139,8 @@ jit_value select_expr_evaluator::value_of(const cell::column::data_type type)
 			"unknown value type when constructing select expression evaluator.");
 }
 
-std::uint8_t select_expr_evaluator::size_in_bytes(const cell::column::data_type type) const
+std::uint8_t select_expr_evaluator::size_in_bytes(
+		const cell::column::data_type type) const
 {
 	switch (type)
 		{
@@ -180,6 +189,49 @@ auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
 		}
 }
 
+auto select_expr_evaluator::gen_column_fetch(const cell::column::data_type type,
+		jit_value row_buffer, jit_value column_index) -> value_type
+{
+	jit_value args[2];
+
+	args[0] = row_buffer;
+	args[1] = column_index;
+
+#define FETCH(type_name, jit_typename)                                       \
+		std::make_tuple(                                                       \
+	insn_call_native("fetch_" #type_name "_value",                            \
+			reinterpret_cast<void*>(fetch_##type_name##_value),                 \
+			signature_helper(jit_typename, jit_type_void_ptr, jit_type_sys_int, \
+					end_params), (_jit_value**) args, 2, 0), type                 \
+	);
+
+	switch (type)
+		{
+		   case cell::column::data_type::smallint:
+			return FETCH(int16, jit_type_short);
+
+			case cell::column::data_type::integer:
+			return FETCH(int32, jit_type_int);
+
+			case cell::column::data_type::bigint:
+			return FETCH(int64, jit_type_long);
+
+			case cell::column::data_type::real:
+			return FETCH(float, jit_type_float32);
+
+			case cell::column::data_type::double_precision:
+			return FETCH(double, jit_type_float64);
+
+			case cell::column::data_type::varchar:
+			return FETCH(string, jit_type_void_ptr);
+		}
+
+#undef FETCH
+
+	throw std::invalid_argument(
+			"unknown value type when constructing select expression evaluator.");
+}
+
 auto select_expr_evaluator::gen_unboxed_binop(actions::node* node,
 		value_type& left, value_type& right) -> value_type
 {
@@ -212,13 +264,13 @@ auto select_expr_evaluator::gen_string_conversion(actions::node* node,
 	jit_insn_store(raw(), t1.raw(), input.raw());
 
 	auto t2 = insn_address_of(t1);
-	args[0] = new_constant((jit_int)type, jit_type_int);
+	args[0] = new_constant((jit_int) type, jit_type_int);
 	args[1] = t2;
 
 	auto result = insn_call_native("convert_value_to_string",
 			reinterpret_cast<void*>(convert_value_to_string),
 			signature_helper(jit_type_void_ptr, jit_type_int, jit_type_void_ptr,
-					end_params), (_jit_value**)args, 2, 0);
+					end_params), (_jit_value**) args, 2, 0);
 
 	return std::make_tuple(result, cell::column::data_type::varchar);
 }
