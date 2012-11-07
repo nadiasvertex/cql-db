@@ -48,8 +48,10 @@ TEST(DataValueTest, BigInt)
 
   data_value dv1, dv2;
 
-  dv1.set_value(column::data_type::bigint, 10LL << 32);
-  dv2.set_value(column::data_type::bigint, 10LL << 32);
+  std::uint64_t value = 10LL << 32;
+
+  dv1.set_value(column::data_type::bigint, value);
+  dv2.set_value(column::data_type::bigint, value);
 
   ASSERT_TRUE(dv1 == dv2);
   ASSERT_FALSE(dv1 < dv2);

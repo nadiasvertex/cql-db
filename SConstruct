@@ -21,7 +21,7 @@ env = Environment(
 #env.Replace(CC="clang")
 #env.Replace(CXX="clang++")
 
-env.Append(CXXFLAGS="-std=c++11 -g")
+env.Append(CXXFLAGS="-std=c++11 -g -O2")
 env.Append(LIBPATH=['.', os.path.join(toolchain_path, "lib")])
 env['ENV']['TERM'] = os.environ['TERM']
 

@@ -92,7 +92,7 @@ public:
 		break;
 
 	case column::data_type::bigint:
-		value.i32 = data;
+		value.i64 = data;
 		break;
 
 	case column::data_type::real:
