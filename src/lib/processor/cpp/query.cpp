@@ -124,10 +124,12 @@ query::tuple_type query::solve_once()
 
 	for (auto& se : select_exprs)
 		{
+			uint64_t row_buffer=0;
+
 			void *output;
 			void *args[1] =
 				{
-				nullptr
+				&row_buffer
 				};
 			auto result = se->apply(args, &output);
 
