@@ -64,7 +64,7 @@ public:
 	}
 };
 
-typedef std::unique_ptr<node> node_handle_type;
+typedef std::shared_ptr<node> node_handle_type;
 
 typedef std::stack<node_handle_type> node_list_type;
 
@@ -76,7 +76,7 @@ class binop: public node
 	node_handle_type left;
 	node_handle_type right;
 public:
-	binop(node::node_type _type, node* _left, node* _right) :
+	binop(node::node_type _type, node_handle_type _left, node_handle_type _right) :
 			node(_type), left(_left), right(_right)
 	{
 	}
@@ -88,17 +88,17 @@ public:
 	/**
 	 * Get the left node.
 	 */
-	node* get_left()
+	node_handle_type get_left()
 	{
-		return left.get();
+		return left;
 	}
 
 	/**
 	 * Get the right node.
 	 */
-	node* get_right()
+	node_handle_type get_right()
 	{
-		return right.get();
+		return right;
 	}
 };
 

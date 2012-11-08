@@ -52,7 +52,6 @@ private:
 	 */
 	table_map_type tables;
 
-
 public:
 	metadata()
 	{
@@ -77,6 +76,35 @@ public:
 			}
 
 		return true;
+	}
+
+	/** Find the type of a column.
+	 *
+	 * @param table_name: The name of the table.
+	 * @param column_name: The name of the column.
+	 *
+	 * @returns: A tuple of (type, found) If found is true
+	 *          then the type is valid, otherwise the column
+	 *          was not found and the type is undefined.
+	 *
+	 */
+	std::tuple<cell::column, bool> get_column_type(const std::string& table_name,
+			const std::string& column_name)
+	{
+		auto tpos = tables.find(table_name);
+		if (tpos==tables.end())
+			{
+				return std::make_tuple(cell::column{}, false);
+			}
+
+		auto& table=tpos->second;
+		auto cpos = table.columns.find(column_name);
+		if(cpos==table.columns.end())
+			{
+				return std::make_tuple(cell::column{}, false);
+			}
+
+		return std::make_tuple(cpos->second, true);
 	}
 
 };

@@ -17,11 +17,11 @@ public:
 
 private:
 	metadata& md;
-	actions::node* se;
+	actions::node_handle_type se;
 
 public:
 	select_expr_evaluator(metadata& _md, jit_context& context,
-			actions::node* _se);
+			actions::node_handle_type _se);
 	/**
 	 * Build the code to evaluate this select expression.
 	 */
@@ -57,7 +57,7 @@ protected:
 	 *
 	 * @param node: The leaf node to evaluate.
 	 */
-	auto eval_leaf(actions::node* node) -> value_type;
+	auto eval_leaf(actions::node_handle_type node) -> value_type;
 
 	/**
 	 * Generates a call to the current row buffer, which fetches an
@@ -82,7 +82,7 @@ protected:
 	 * @return: A new value that represents the output of the
 	 *          instruction.
 	 */
-	auto gen_unboxed_binop(actions::node* node, value_type& left,
+	auto gen_unboxed_binop(actions::node_handle_type node, value_type& left,
 			value_type& right) -> value_type;
 
 	/**
@@ -102,7 +102,7 @@ protected:
 	 * the output of this function.
 	 *
 	 */
-	auto gen_string_conversion(actions::node* node,
+	auto gen_string_conversion(actions::node_handle_type node,
 			value_type& value) -> value_type;
 
 	/**
@@ -113,7 +113,7 @@ protected:
 	 * @returns: A new value that represents the output of the
 	 *           instruction.
 	 */
-	auto eval_binop(actions::node* node) -> value_type;
+	auto eval_binop(actions::node_handle_type node) -> value_type;
 
 	/**
 	 * Top level evaluator. Evaluates this node, returning a single jit value
@@ -124,7 +124,7 @@ protected:
 	 * @returns: A new value that represents the output of the
 	 *           instruction.
 	 */
-	auto evaluate(actions::node* node) -> value_type;
+	auto evaluate(actions::node_handle_type node) -> value_type;
 };
 
 } // end namespace processor

@@ -149,10 +149,10 @@ TEST_F(QueryParserTest, CanParseSelectString)
 	EXPECT_TRUE(qp.parse());
 
 	// Expect one select expression.
-	/*auto& se = qp.get_query().get_select_expressions();
-	 EXPECT_EQ(1, se.size());
+	auto& se = qp.get_query().get_select_expressions();
+	EXPECT_EQ(1, se.size());
 
-	 EXPECT_EQ(actions::node::node_type::LITERAL, se[0]->get_type());*/
+	EXPECT_EQ(actions::node::node_type::LITERAL, se[0]->get_type());
 }
 
 TEST_F(QueryParserTest, CanParseAddition)

@@ -99,6 +99,14 @@ public:
 	}
 
 	/**
+	 * Provides access to the table name.
+	 */
+	const std::string& get_table_name()
+	{
+		return name;
+	}
+
+	/**
 	 * Sets the name of the table in the last join added
 	 * to the table expression.
 	 *
@@ -155,7 +163,7 @@ public:
 		while (!s.empty())
 			{
 				select_expressions.insert(select_expressions.begin(),
-						node_handle_type(s.top().release()));
+						node_handle_type(s.top()));
 				s.pop();
 			}
 	}
@@ -167,6 +175,14 @@ public:
 	select_list_type& get_select_expressions()
 	{
 		return select_expressions;
+	}
+
+	/**
+	 * Provides access to the table expression for this query.
+	 */
+	table_expr& get_table_expression()
+	{
+		return table_expression;
 	}
 
 	/**
@@ -256,7 +272,6 @@ struct push_deref: action_base<push_deref>
 
 		auto table_name = m.substr(0, p);
 		auto column_name = m.substr(p + 1, m.size() - p);
-
 
 		auto& q = qs.top();
 		auto* tbl_ref = new table_ref(table_name);
@@ -369,9 +384,9 @@ struct push_binop: action_base<push_binop>
 			}
 
 		// Pop the two top nodes so they can be joined.
-		auto right = s.top().release();
+		auto right = s.top();
 		s.pop();
-		auto left = s.top().release();
+		auto left = s.top();
 		s.pop();
 
 		// Replace the top node.

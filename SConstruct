@@ -8,7 +8,7 @@ path = ":".join([os.environ['PATH'],
                  "/store/workspace/build/Release+Asserts/bin",
                  os.path.join(toolchain_path, "bin")])
 
-libs = ['zmq', 'protobuf', 'jit', 'jitplus', 'pthread', 'rt']
+libs = ['zmq', 'protobuf', 'jitplus', 'jit', 'pthread', 'rt']
 
 env = Environment(
     ENV={
@@ -21,7 +21,7 @@ env = Environment(
 #env.Replace(CC="clang")
 #env.Replace(CXX="clang++")
 
-env.Append(CXXFLAGS="-std=c++11 -g -O2")
+env.Append(CXXFLAGS="-std=c++11 -g")
 env.Append(LIBPATH=['.', os.path.join(toolchain_path, "lib")])
 env['ENV']['TERM'] = os.environ['TERM']
 

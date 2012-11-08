@@ -60,7 +60,7 @@ convert_value_to_string(cell::column::data_type type, void* value)
 }
 
 select_expr_evaluator::select_expr_evaluator(metadata& _md,
-		jit_context& context, actions::node* _se) :
+		jit_context& context, actions::node_handle_type _se) :
 		md(_md), jit_function(context), se(_se)
 {
 	create();
@@ -167,13 +167,13 @@ std::uint8_t select_expr_evaluator::size_in_bytes(
 			"unknown value type when constructing select expression evaluator.");
 }
 
-auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
+auto select_expr_evaluator::eval_leaf(actions::node_handle_type node) -> value_type
 {
 	switch (node->get_type())
 		{
 		case actions::node::node_type::LITERAL:
 			{
-				auto* l = dynamic_cast<actions::literal*>(node);
+				auto* l = dynamic_cast<actions::literal*>(node.get());
 				if (l == nullptr)
 					{
 						throw std::invalid_argument(
@@ -185,7 +185,7 @@ auto select_expr_evaluator::eval_leaf(actions::node* node) -> value_type
 
 		case actions::node::node_type::COLUMN_REF:
 			{
-				auto* cr = dynamic_cast<actions::column_ref*>(node);
+				auto* cr = dynamic_cast<actions::column_ref*>(node.get());
 				if (cr == nullptr)
 					{
 						throw std::invalid_argument(
@@ -255,7 +255,7 @@ auto select_expr_evaluator::gen_column_fetch(const cell::column::data_type type,
 			"unknown value type when constructing select expression evaluator.");
 }
 
-auto select_expr_evaluator::gen_unboxed_binop(actions::node* node,
+auto select_expr_evaluator::gen_unboxed_binop(actions::node_handle_type node,
 		value_type& left, value_type& right) -> value_type
 {
 	auto& l = std::get<0>(left);
@@ -275,7 +275,7 @@ auto select_expr_evaluator::gen_unboxed_binop(actions::node* node,
 		}
 }
 
-auto select_expr_evaluator::gen_string_conversion(actions::node* node,
+auto select_expr_evaluator::gen_string_conversion(actions::node_handle_type node,
 		value_type& value) -> value_type
 {
 	auto type = std::get<1>(value);
@@ -298,9 +298,9 @@ auto select_expr_evaluator::gen_string_conversion(actions::node* node,
 	return std::make_tuple(result, cell::column::data_type::varchar);
 }
 
-auto select_expr_evaluator::eval_binop(actions::node* node) -> value_type
+auto select_expr_evaluator::eval_binop(actions::node_handle_type node) -> value_type
 {
-	actions::binop* op = dynamic_cast<actions::binop*>(node);
+	actions::binop* op = dynamic_cast<actions::binop*>(node.get());
 
 	// Op is apparently not really a binop.
 	if (op == nullptr)
@@ -319,7 +319,7 @@ auto select_expr_evaluator::eval_binop(actions::node* node) -> value_type
 
 }
 
-auto select_expr_evaluator::evaluate(actions::node* node) -> value_type
+auto select_expr_evaluator::evaluate(actions::node_handle_type node) -> value_type
 {
 	switch (node->get_type())
 		{

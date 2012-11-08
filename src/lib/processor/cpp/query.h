@@ -2,6 +2,8 @@
 #define __LATTICE_PROCESSOR_QUERY_H__
 
 #include <memory>
+#include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include <processor/cpp/metadata.h>
@@ -25,6 +27,12 @@ public:
 	/** Contains the output of a select. */
 	typedef std::vector<std::string> tuple_type;
 
+	/** Contains the output of the syntax check. */
+	typedef std::tuple<std::string, bool> check_type;
+
+	/** Contains a mapping between a column index and the type of the column. */
+	typedef std::unordered_map<int, cell::column> column_index_type_map_type;
+
 private:
 	metadata& md;
 
@@ -34,7 +42,9 @@ private:
 	jit_context ctx;
 
 	/**
-	 * A list of
+	 * A list of select expression evaluator objects. They have the
+	 * job of actually executing each select expression and solving
+	 * them.
 	 */
 	select_evaluator_list_type select_exprs;
 
@@ -52,6 +62,8 @@ public:
 	{
 		return solve_once();
 	}
+
+
 
 };
 
