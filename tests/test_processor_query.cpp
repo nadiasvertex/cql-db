@@ -283,3 +283,68 @@ TEST_F(QueryTest, CanSelectColumnWithLiteralExpression)
 	ASSERT_EQ(1, r.size());
 	EXPECT_EQ(std::string("11"), r[0]);
 }
+
+TEST_F(QueryTest, CanSelectMultiColumnWithLiteralExpression)
+{
+	using namespace lattice::processor;
+	using namespace lattice::cell;
+
+	query q(*md, "select id+10, c1/2 from test_table_1");
+
+	row_buffer::row_header_type rh
+		{
+		column
+			{
+			column::data_type::integer, "id", 4
+			}, column
+			{
+			column::data_type::bigint, "c1", 8
+			}
+		};
+
+	lattice::processor::row_buffer rb
+		{
+		rh
+		};
+
+	GenerateRowData(rb);
+
+	auto r = q.fetch_one(rb);
+
+	ASSERT_EQ(2, r.size());
+	EXPECT_EQ(std::string("11"), r[0]);
+	EXPECT_EQ(std::string("5000"), r[1]);
+}
+
+TEST_F(QueryTest, CanSelectAddColumns)
+{
+	using namespace lattice::processor;
+	using namespace lattice::cell;
+
+	query q(*md, "select id+c1 from test_table_1");
+
+	row_buffer::row_header_type rh
+		{
+		column
+			{
+			column::data_type::integer, "id", 4
+			}, column
+			{
+			column::data_type::bigint, "c1", 8
+			}
+		};
+
+	lattice::processor::row_buffer rb
+		{
+		rh
+		};
+
+	GenerateRowData(rb);
+
+	auto r = q.fetch_one(rb);
+
+	ASSERT_EQ(1, r.size());
+	EXPECT_EQ(std::string("10001"), r[0]);
+}
+
+
