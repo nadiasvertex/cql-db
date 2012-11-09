@@ -79,7 +79,8 @@ static expected<bool> check(metadata& md, query_parser& parser,
 						}
 
 					// Map the type to the column index.
-					fields.column_types.insert(std::make_pair(index, std::get<0>(info)));
+					fields.column_types.insert(
+							std::make_pair(index, std::get<0>(info)));
 				}
 			else
 				{
@@ -96,7 +97,8 @@ static expected<bool> check(metadata& md, query_parser& parser,
 						}
 
 					// Map the type to the column index.
-					fields.column_types.insert(std::make_pair(index, std::get<0>(info)));
+					fields.column_types.insert(
+							std::make_pair(index, std::get<0>(info)));
 				}
 		}
 
@@ -141,9 +143,9 @@ query::tuple_type query::solve_once(row_buffer& rb)
 	// 2. Solve selects
 	void *row_buffer_address = static_cast<void*>(&rb);
 	void *args[1] =
-			{
-			&row_buffer_address
-			};
+		{
+		&row_buffer_address
+		};
 
 	for (auto& se : select_exprs)
 		{

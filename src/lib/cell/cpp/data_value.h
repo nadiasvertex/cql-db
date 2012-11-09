@@ -233,6 +233,16 @@ public:
 	std::size_t read(std::istream& buffer);
 
 	/**
+	 * Copies the data from in_buffer to out_buffer.
+	 *
+	 * @param in_buffer:   The buffer to read from.
+	 * @param out_buffer:  The buffer to write to;
+	 *
+	 * @returns: Number of bytes copied.
+	 */
+	std::size_t copy(std::istream& in_buffer, std::ostream& out_buffer);
+
+	/**
 	 * Compares the data value with the current value
 	 * pointed to by the cursor.
 	 *

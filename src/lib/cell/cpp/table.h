@@ -10,190 +10,254 @@
 #include <cell/cpp/unstringify.h>
 #include <cell/cpp/page.h>
 
-namespace lattice
-{
-namespace cell
-{
+namespace lattice {
+namespace cell {
 
 class table
 {
 public:
-  /**
-   * A row contains pointers to the data for all columns stored in a row.
-   */
-  typedef std::vector<page::object_id_type> row_type;
+	/**
+	 * A row contains pointers to the data for all columns stored in a row.
+	 */
+	typedef std::vector<page::object_id_type> row_type;
 
-  /**
-   * The column data for the table.
-   */
-  typedef std::vector<page_handle_type> column_data_type;
+	/**
+	 * The column data for the table.
+	 */
+	typedef std::vector<page_handle_type> column_data_type;
 
-  /**
-   * A hash of rows.
-   */
-  typedef std::unordered_map<page::object_id_type, row_type> row_list_type;
+	/**
+	 * A hash of rows.
+	 */
+	typedef std::unordered_map<page::object_id_type, row_type> row_list_type;
 
-  /**
-   * Indicates if a column is present in a data operation.
-   */
-  typedef std::vector<bool> column_present_type;
+	/**
+	 * Indicates if a column is present in a data operation.
+	 */
+	typedef std::vector<bool> column_present_type;
 
-  /**
-   * Provides storage for text results read from a command string.
-   */
-  typedef std::vector<std::string> text_tuple_type;
+	/**
+	 * Provides storage for text results read from a command string.
+	 */
+	typedef std::vector<std::string> text_tuple_type;
 
 private:
-  /**
-   * The list of rows assigned to the table.
-   */
-  row_list_type rows;
+	/**
+	 * The list of rows assigned to the table.
+	 */
+	row_list_type rows;
 
-  /**
-   * The column data for this table.
-   */
-  column_data_type column_data;
+	/**
+	 * The column data for this table.
+	 */
+	column_data_type column_data;
 
-  /**
-   * The column name to column index mapping.
-   */
-  std::unordered_map<std::string, unsigned int> column_names;
+	/**
+	 * The column name to column index mapping.
+	 */
+	std::unordered_map<std::string, unsigned int> column_names;
 
-  /**
-   * The number of columns in the table.
-   */
-  unsigned int number_of_columns;
+	/**
+	 * The number of columns in the table.
+	 */
+	unsigned int number_of_columns;
 
 public:
 
-  table(unsigned int _number_of_columns) :
-      number_of_columns(_number_of_columns)
-  {
-    for (auto i = 0; i < number_of_columns; ++i)
-      {
-        column_data.push_back(page_handle_type(nullptr));
-      }
-  }
+	table(unsigned int _number_of_columns) :
+			number_of_columns(_number_of_columns)
+	{
+		for (auto i = 0; i < number_of_columns; ++i)
+			{
+				column_data.push_back(page_handle_type(nullptr));
+			}
+	}
 
-  /**
-   * Indicates how many columns are defined for
-   * this table.
-   */
-  unsigned int get_number_of_columns()
-  {
-    return number_of_columns;
-  }
+	/**
+	 * Indicates how many columns are defined for
+	 * this table.
+	 */
+	unsigned int get_number_of_columns()
+	{
+		return number_of_columns;
+	}
 
-  /**
-   * Get the column id by name.
-   *
-   * @param name: The name of the column.
-   */
-  unsigned int get_column_id(const std::string& name)
-  {
-    auto pos = column_names.find(name);
-    if (pos != column_names.end())
-      {
-        // Need to throw an exception here, because the
-        // column name does not exist.
-        return 0;
-      }
+	/**
+	 * Get the column id by name.
+	 *
+	 * @param name: The name of the column.
+	 */
+	unsigned int get_column_id(const std::string& name)
+	{
+		auto pos = column_names.find(name);
+		if (pos != column_names.end())
+			{
+				// Need to throw an exception here, because the
+				// column name does not exist.
+				return 0;
+			}
 
-    return pos->second;
-  }
+		return pos->second;
+	}
 
-  /**
-   * Set the column definition for the given column.
-   *
-   * @param column_number: The column to set.
-   * @param col: The definition to write.
-   *
-   * @returns: true if it worked, false if it didn't.
-   */
-  bool set_column_definition(unsigned int column_number, column* col)
-  {
-    if (column_number >= number_of_columns || col == nullptr)
-      {
-        return false;
-      }
+	/**
+	 * Set the column definition for the given column.
+	 *
+	 * @param column_number: The column to set.
+	 * @param col: The definition to write.
+	 *
+	 * @returns: true if it worked, false if it didn't.
+	 */
+	bool set_column_definition(unsigned int column_number, column* col)
+	{
+		if (column_number >= number_of_columns || col == nullptr)
+			{
+				return false;
+			}
 
-    if (column_data[column_number].get() != nullptr)
-      {
-        // This means that we have already set the column definition
-        // and overwriting it would cause data loss. In this case we
-        // need to alter the definition so that we migrate the data
-        // to the new format.
-        //
-        // This function is not currently implemented, so return false.
-        return false;
-      }
+		if (column_data[column_number].get() != nullptr)
+			{
+				// This means that we have already set the column definition
+				// and overwriting it would cause data loss. In this case we
+				// need to alter the definition so that we migrate the data
+				// to the new format.
+				//
+				// This function is not currently implemented, so return false.
+				return false;
+			}
 
-    // Update the name map.
-    if (column_names.find(col->name) != column_names.end())
-      {
-        // The column name already exists.
-        return false;
-      }
+		// Update the name map.
+		if (column_names.find(col->name) != column_names.end())
+			{
+				// The column name already exists.
+				return false;
+			}
 
-    // Create a new column and set the definition.
-    column_data[column_number] = page_handle_type(new page(col));
-    column_names[col->name] = column_number;
+		// Create a new column and set the definition.
+		column_data[column_number] = page_handle_type(new page(col));
+		column_names[col->name] = column_number;
 
-    return true;
-  }
+		return true;
+	}
 
-  /**
-   * Insert the row into the table.
-   *
-   * @param row_id: The oid for the new row.
-   *
-   * @param present: Each bit indicates whether the corresponding
-   *                 column is present. Only present columns will
-   *                 be read from the data buffer and inserted into
-   *                 the column store.
-   *
-   * @param buffer: The data buffer to read data from.
-   * @param buffer_size: The size in bytes of the data buffer.
-   */
-  bool insert_row(page::object_id_type row_id,
-      column_present_type present,
-      std::uint8_t *buffer, std::size_t buffer_size);
+	/**
+	 * Provides an iterator pointing to the first row of this table.
+	 */
+	row_list_type::iterator begin()
+	{
+		return rows.begin();
+	}
 
-  /**
-   * Fetch a row from the table.
-   *
-   * @param row_id: The oid for the row.
-   *
-   * @param present: Each bit indicates whether the corresponding
-   *                 column should be present. If the column is
-   *                 marked present in this vector, it will be
-   *                 read from the column store and written into
-   *                 the buffer.
-   *
-   * @param buffer: The data buffer to write data into.
-   * @param buffer_size: The size in bytes of the data buffer.
-   */
-  bool fetch_row(page::object_id_type row_id,
-      column_present_type present,
-      std::uint8_t *buffer, std::size_t buffer_size);
+	/**
+	 * Provides an iterator pointing to the row just after then end of
+	 * this table.
+	 */
+	row_list_type::iterator end()
+	{
+		return rows.end();
+	}
 
-  /**
-   * Converts a text tuple into a binary format.
-   *
-   * @param present: Each bit indicates whether the corresponding
-   *                 column should be present. If the column is
-   *                 marked present in this vector, it will be
-   *                 read from the column store and written into
-   *                 the buffer.
-   *
-   * @param tuple: The text tuple, a list of strings which need
-   *               to be converted into a binary buffer.
-   *
-   * @param buffer: The data buffer to write data into.
-   * @param buffer_size: The size in bytes of the data buffer.
-   */
-  bool to_binary(column_present_type present, text_tuple_type tuple,
-      std::uint8_t* buffer, std::size_t buffer_size);
+	/**
+	 * Insert the row into the table.
+	 *
+	 * @param row_id: The oid for the new row.
+	 *
+	 * @param present: Each bit indicates whether the corresponding
+	 *                 column is present. Only present columns will
+	 *                 be read from the data buffer and inserted into
+	 *                 the column store.
+	 *
+	 * @param buffer: The data buffer to read data from.
+	 * @param buffer_size: The size in bytes of the data buffer.
+	 */
+	bool insert_row(page::object_id_type row_id, column_present_type present,
+			std::uint8_t *buffer, std::size_t buffer_size);
+
+	/**
+	 * Fetch a row from the table.
+	 *
+	 * @param pos: An iterator pointing to a row.
+	 *
+	 * @param present: Each bit indicates whether the corresponding
+	 *                 column should be present. If the column is
+	 *                 marked present in this vector, it will be
+	 *                 read from the column store and written into
+	 *                 the buffer.
+	 *
+	 * @param buffer: The data buffer to write data into.
+	 * @param buffer_size: The size in bytes of the data buffer.
+	 */
+	bool fetch_row(row_list_type::iterator& pos,
+			const column_present_type& present, std::uint8_t *buffer,
+			std::size_t buffer_size);
+
+	/**
+	 * Fetch a row from the table.
+	 *
+	 * @param row_id: The oid for the row.
+	 *
+	 * @param present: Each bit indicates whether the corresponding
+	 *                 column should be present. If the column is
+	 *                 marked present in this vector, it will be
+	 *                 read from the column store and written into
+	 *                 the buffer.
+	 *
+	 * @param buffer: The data buffer to write data into.
+	 * @param buffer_size: The size in bytes of the data buffer.
+	 */
+	bool fetch_row(page::object_id_type row_id,
+			const column_present_type& present, std::uint8_t *buffer,
+			std::size_t buffer_size);
+
+	/**
+	 * Fetch a row from the table.
+	 *
+	 * @param pos: An iterator pointing to the a row.
+	 *
+	 * @param present: Each bit indicates whether the corresponding
+	 *                 column should be present. If the column is
+	 *                 marked present in this vector, it will be
+	 *                 read from the column store and written into
+	 *                 the buffer.
+	 *
+	 * @param buffer: The data buffer to write data into.
+	 */
+	bool fetch_row(row_list_type::iterator& pos,
+			const column_present_type& present, std::ostream& buffer);
+
+	/**
+	 * Fetch a row from the table.
+	 *
+	 * @param row_id: The oid for the row.
+	 *
+	 * @param present: Each bit indicates whether the corresponding
+	 *                 column should be present. If the column is
+	 *                 marked present in this vector, it will be
+	 *                 read from the column store and written into
+	 *                 the buffer.
+	 *
+	 * @param buffer: The data buffer to write data into.
+	 */
+	bool fetch_row(page::object_id_type row_id,
+			const column_present_type& present, std::ostream& buffer);
+
+	/**
+	 * Converts a text tuple into a binary format.
+	 *
+	 * @param present: Each bit indicates whether the corresponding
+	 *                 column should be present. If the column is
+	 *                 marked present in this vector, it will be
+	 *                 read from the column store and written into
+	 *                 the buffer.
+	 *
+	 * @param tuple: The text tuple, a list of strings which need
+	 *               to be converted into a binary buffer.
+	 *
+	 * @param buffer: The data buffer to write data into.
+	 * @param buffer_size: The size in bytes of the data buffer.
+	 */
+	bool to_binary(column_present_type present, text_tuple_type tuple,
+			std::uint8_t* buffer, std::size_t buffer_size);
 
 };
 

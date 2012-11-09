@@ -358,6 +358,51 @@ std::size_t data_value::read(std::istream& buffer)
 		}
 }
 
+
+std::size_t data_value::copy(std::istream& in_buffer, std::ostream& out_buffer)
+{
+	switch (type)
+		{
+	case column::data_type::smallint:
+		_read(value.i16, in_buffer);
+		return _write(value.i16, out_buffer);
+
+	case column::data_type::integer:
+		_read(value.i32, in_buffer);
+		return _write(value.i32, out_buffer);
+
+	case column::data_type::bigint:
+		_read(value.i64, in_buffer);
+		return _write(value.i64, out_buffer);
+
+	case column::data_type::real:
+		_read(value.f32, in_buffer);
+		return _write(value.f32, out_buffer);
+
+	case column::data_type::double_precision:
+		_read(value.f64, in_buffer);
+		return _write(value.f64, out_buffer);
+
+	case column::data_type::varchar:	{
+			varchar_size_type size;
+
+			_read(size, in_buffer);
+			_write(size, out_buffer);
+
+			// Stream the copy over so we don't
+			// waste too much memory.
+			for(auto i=0; i<size; ++i)
+				{
+					out_buffer.put(in_buffer.get());
+				}
+
+			return size + sizeof(size);
+		};
+
+		}
+}
+
+
 data_value data_value::as_smallint() const
 {
 	data_value out(column::data_type::smallint);

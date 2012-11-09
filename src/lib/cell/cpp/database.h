@@ -52,7 +52,7 @@ public:
    *
    * @returns: true if it worked, false otherwise.
    */
-  bool create_table(std::string name,
+  bool create_table(const std::string& name,
       std::vector<column*> columns)
   {
 
@@ -71,6 +71,16 @@ public:
     table_names[oid] = name;
 
     return true;
+  }
+
+  /**
+   * Get the table that corresponds to the given table id.
+   *
+   * @param table_id: The object id of the table.
+   */
+  table_handle_type get_table(page::object_id_type table_id)
+  {
+	  return tables[table_id];
   }
 
 };
