@@ -235,6 +235,23 @@ TEST_F(QueryParserTest, CanParseSelectFrom)
 	EXPECT_EQ(actions::node::node_type::COLUMN_REF, se[0]->get_type());
 }
 
+TEST_F(QueryParserTest, CanParseSelectTwoColumnsFrom)
+{
+	using namespace lattice::processor;
+
+	std::string query_data("select c1+10, id*10 from test_table_1");
+	query_parser qp(*md, query_data);
+
+	EXPECT_TRUE(qp.parse());
+
+	// Expect one select expression.
+	auto& se = qp.get_query().get_select_expressions();
+	EXPECT_EQ(2, se.size());
+
+	EXPECT_EQ(actions::node::node_type::OP_ADD, se[0]->get_type());
+	EXPECT_EQ(actions::node::node_type::OP_MUL, se[1]->get_type());
+}
+
 TEST_F(QueryParserTest, CanParseSimpleInnerJoin)
 {
 	using namespace lattice::processor;

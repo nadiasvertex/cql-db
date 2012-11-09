@@ -33,7 +33,8 @@ public:
 				}
 			});
 
-		row_buffer::row_header_type rh {
+		row_buffer::row_header_type rh
+			{
 			column
 				{
 				column::data_type::integer, "id", 4
@@ -46,7 +47,10 @@ public:
 				}
 			};
 
-		stock_rb = new row_buffer { rh };
+		stock_rb = new row_buffer
+			{
+			rh
+			};
 	}
 
 	virtual void TearDown()
@@ -56,31 +60,31 @@ public:
 	}
 
 	void GenerateRowData(lattice::processor::row_buffer& rb)
-		{
-			using namespace lattice::cell;
+	{
+		using namespace lattice::cell;
 
-			data_value d1, d2, d3;
-			lattice::processor::Row row_data;
+		data_value d1, d2, d3;
+		lattice::processor::Row row_data;
 
-			d1.set_value(column::data_type::integer, 1);
-			d2.set_value(column::data_type::bigint, 10000);
-			d3.set_value(column::data_type::varchar, std::string("This is a test."));
+		d1.set_value(column::data_type::integer, 1);
+		d2.set_value(column::data_type::bigint, 10000);
+		d3.set_value(column::data_type::varchar, std::string("This is a test."));
 
-			std::stringstream out;
+		std::stringstream out;
 
-			d1.write(out);
-			d2.write(out);
-			d3.write(out);
+		d1.write(out);
+		d2.write(out);
+		d3.write(out);
 
-			auto data = out.str();
-			auto size = data.size();
+		auto data = out.str();
+		auto size = data.size();
 
-			row_data.set_id(1);
-			row_data.set_data(data);
+		row_data.set_id(1);
+		row_data.set_data(data);
 
-			rb.enqueue(row_data);
-			rb.dequeue();
-		}
+		rb.enqueue(row_data);
+		rb.dequeue();
+	}
 
 };
 
@@ -199,14 +203,18 @@ TEST_F(QueryTest, CanSelectColumn)
 
 	query q(*md, "select id from test_table_1");
 
-	row_buffer::row_header_type rh {
+	row_buffer::row_header_type rh
+		{
 		column
 			{
 			column::data_type::integer, "id", 4
 			}
 		};
 
-	lattice::processor::row_buffer rb { rh };
+	lattice::processor::row_buffer rb
+		{
+		rh
+		};
 
 	GenerateRowData(rb);
 
@@ -216,3 +224,62 @@ TEST_F(QueryTest, CanSelectColumn)
 	EXPECT_EQ(std::string("1"), r[0]);
 }
 
+TEST_F(QueryTest, CanSelectMultiColumn)
+{
+	using namespace lattice::processor;
+	using namespace lattice::cell;
+
+	query q(*md, "select id, c1 from test_table_1");
+
+	row_buffer::row_header_type rh
+		{
+		column
+			{
+			column::data_type::integer, "id", 4
+			}, column
+			{
+			column::data_type::bigint, "c1", 8
+			}
+		};
+
+	lattice::processor::row_buffer rb
+		{
+		rh
+		};
+
+	GenerateRowData(rb);
+
+	auto r = q.fetch_one(rb);
+
+	ASSERT_EQ(2, r.size());
+	EXPECT_EQ(std::string("1"), r[0]);
+	EXPECT_EQ(std::string("10000"), r[1]);
+}
+
+TEST_F(QueryTest, CanSelectColumnWithLiteralExpression)
+{
+	using namespace lattice::processor;
+	using namespace lattice::cell;
+
+	query q(*md, "select id+10 from test_table_1");
+
+	row_buffer::row_header_type rh
+		{
+		column
+			{
+			column::data_type::integer, "id", 4
+			}
+		};
+
+	lattice::processor::row_buffer rb
+		{
+		rh
+		};
+
+	GenerateRowData(rb);
+
+	auto r = q.fetch_one(rb);
+
+	ASSERT_EQ(1, r.size());
+	EXPECT_EQ(std::string("11"), r[0]);
+}

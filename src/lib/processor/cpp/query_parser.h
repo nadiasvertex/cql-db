@@ -193,14 +193,14 @@ struct from :
 	seq< from_kw, table_expression > {};
 
 struct select_expression :
-		plus< sor< one<'*'>,
-		           seq<expression, opt< column_alias > >
-		         >
-		> {};
+		sor< one<'*'>,
+		      seq< expression, opt< column_alias > >
+		   >
+		{};
 
 struct select :
 		seq< select_kw,
-			  list<select_expression, comma_kw >,
+			  list< select_expression, comma_kw >,
  	        apply< actions::select >,
            opt< from >
 		> {};
@@ -209,9 +209,6 @@ struct select :
 
 class query_parser
 {
-public:
-
-
 private:
   metadata&   md;
   std::string query_data;
@@ -227,7 +224,7 @@ public:
   {
 	  actions::node_list_type s;
 	  qs.push(actions::query_handle_type(new actions::query));
-	  pegtl::basic_parse_string<recognizer::select>(query_data, s, qs);
+	  pegtl::smart_parse_string<recognizer::select>(true, query_data, s, qs);
 	  return true;
   }
 
