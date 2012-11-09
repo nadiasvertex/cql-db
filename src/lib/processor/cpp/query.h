@@ -8,6 +8,7 @@
 
 #include <processor/cpp/metadata.h>
 #include <processor/cpp/evaluator.h>
+#include <processor/cpp/row_buffer.h>
 
 
 #include <jit/jit-plus.h>
@@ -47,14 +48,14 @@ private:
 	 *
 	 * @returns: A tuple containing the output, if any.
 	 */
-	tuple_type solve_once();
+	tuple_type solve_once(row_buffer& rb);
 
 public:
 	query(metadata& _md, const std::string& query_data);
 
-	tuple_type fetch_one()
+	tuple_type fetch_one(row_buffer& rb)
 	{
-		return solve_once();
+		return solve_once(rb);
 	}
 
 

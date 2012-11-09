@@ -132,7 +132,7 @@ query::query(metadata& _md, const std::string& query_data) :
 		}
 }
 
-query::tuple_type query::solve_once()
+query::tuple_type query::solve_once(row_buffer& rb)
 {
 	tuple_type tpl;
 
@@ -142,12 +142,10 @@ query::tuple_type query::solve_once()
 
 	for (auto& se : select_exprs)
 		{
-			uint64_t row_buffer = 0;
-
 			void *output;
 			void *args[1] =
 				{
-				&row_buffer
+				&rb
 				};
 			auto result = se->apply(args, &output);
 
