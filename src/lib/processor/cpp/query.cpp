@@ -139,14 +139,15 @@ query::tuple_type query::solve_once(row_buffer& rb)
 	// 1. Execute predicates
 
 	// 2. Solve selects
+	void *row_buffer_address = static_cast<void*>(&rb);
+	void *args[1] =
+			{
+			&row_buffer_address
+			};
 
 	for (auto& se : select_exprs)
 		{
 			void *output;
-			void *args[1] =
-				{
-				&rb
-				};
 			auto result = se->apply(args, &output);
 
 			std::string* value = static_cast<std::string*>(output);
