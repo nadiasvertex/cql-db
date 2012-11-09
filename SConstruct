@@ -28,20 +28,22 @@ env['ENV']['TERM'] = os.environ['TERM']
 proto = env.Protoc(
 	   [],
 	   glob("src/lib/edge/proto/*.proto") +\
-       glob("src/lib/processor/proto/*.proto"),
+       glob("src/lib/processor/proto/*.proto")+\
+       glob("src/lib/cell/proto/*.proto"),
 	   PROTOCPROTOPATH=["src/lib"],
 	   PROTOCOUTDIR="build"
 )
 
 # Edge library
-env.Library("edge", glob("build/edge/proto/*.cc") + \
+env.Library("edge", glob("build/edge/proto/*.cc") +\
                     glob("src/lib/edge/cpp/*.cpp"))
 # Plane library
 env.Library("plane", glob("src/lib/plane/cpp/*.cpp"))
 # Cell library
-env.Library("cell", glob("src/lib/cell/cpp/*.cpp"))
+env.Library("cell", glob("build/cell/proto/*.cc")+ \
+                    glob("src/lib/cell/cpp/*.cpp"))
 # Processor library
-env.Library("processor", glob("build/processor/proto/*.cc")+ \
+env.Library("processor", glob("build/processor/proto/*.cc")+\
                          glob("src/lib/processor/cpp/*.cpp"))
 
 # Group server

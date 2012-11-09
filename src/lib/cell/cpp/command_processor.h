@@ -4,6 +4,7 @@
 #include <cell/cpp/database.h>
 #include <cell/cpp/transaction.h>
 #include <processor/proto/row.pb.h>
+#include <cell/proto/commands.pb.h>
 
 namespace lattice {
 namespace cell {
@@ -33,6 +34,9 @@ private:
 	 * Contains the next transaction id that will be provided.
 	 */
 	page::object_id_type next_transaction_id;
+
+private:
+	CommandResponse prepare(const CommandRequest& request);
 
 public:
 	command_processor()
@@ -83,6 +87,16 @@ public:
 	 */
 	std::string fetch_columns(page::object_id_type txn_id,
 			page::object_id_type cursor_id, std::vector<int> column_indexes);
+
+	/**
+	 * Process the command request and provide an equivalent
+	 * command response.
+	 *
+	 * @param request: The command request to process.
+	 *
+	 * @returns: A new command response.
+	 **/
+	CommandResponse process(const CommandRequest& request);
 
 };
 

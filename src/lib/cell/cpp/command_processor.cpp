@@ -26,7 +26,7 @@ page::object_id_type command_processor::create_cursor(
 	auto& txn = pos->second;
 
 	// Get the table
-   auto t = db.get_table(table_id);
+	auto t = db.get_table(table_id);
 
 	// Create a cursor on the table.
 	return txn.create_cursor(t);
@@ -47,20 +47,62 @@ std::string command_processor::fetch_columns(page::object_id_type txn_id,
 	// Get cursor
 	auto& cursor = txn.get_cursor(cursor_id);
 	auto& row = cursor.it;
-	auto& t   = cursor.t;
+	auto& t = cursor.t;
 
 	// Temporary buffer for writing out data.
 	std::stringstream out;
 	std::vector<bool> present;
 
 	present.assign(t->get_number_of_columns(), false);
-	for(auto index : column_indexes)
+	for (auto index : column_indexes)
 		{
 			present[index] = true;
 		}
 
 	t->fetch_row(row, present, out);
 	return out.str();
+}
+
+CommandResponse command_processor::prepare(const CommandRequest& request)
+{
+	CommandResponse resp;
+	auto* prepare_response = resp.mutable_prepare();
+
+	resp.set_kind(CommandResponse::PREPARE);
+
+	auto& msg = request.prepare();
+
+	// Establish the transaction id.
+	page::object_id_type txn_id;
+	if (msg.has_create_transaction() && msg.create_transaction())
+		{
+			txn_id = create_transaction();
+			prepare_response->set_transaction_id(txn_id);
+		}
+	else
+		{
+			txn_id = msg.transaction_id();
+		}
+
+	// Create all requested cursors.
+	for(auto i=0; i<msg.cursors_size(); ++i)
+		{
+			auto table_id = db.get_table_id(msg.cursors(i));
+			auto cursor_id = create_cursor(txn_id, table_id);
+			prepare_response->add_cursor_ids(cursor_id);
+		}
+
+	return resp;
+}
+
+CommandResponse command_processor::process(const CommandRequest& request)
+{
+	switch (request.kind())
+		{
+		case CommandRequest::PREPARE:
+			return prepare(request);
+		break;
+		}
 }
 
 } // namespace cell

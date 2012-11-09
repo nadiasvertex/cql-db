@@ -19,6 +19,8 @@ public:
    */
   typedef std::unordered_map<page::object_id_type, std::string> oid_name_map_type;
 
+  typedef std::unordered_map<std::string, page::object_id_type> name_oid_map_type;
+
   /** Maps oids to tables. */
   typedef std::unordered_map<page::object_id_type, table_handle_type> table_map_type;
 
@@ -32,6 +34,8 @@ private:
    * The map of table ids to table names.
    */
   oid_name_map_type table_names;
+
+  name_oid_map_type table_oids;
 
   /**
    * The next table id to be provided.
@@ -69,8 +73,14 @@ public:
 
     tables[oid] = t;
     table_names[oid] = name;
+    table_oids[name] = oid;
 
     return true;
+  }
+
+  page::object_id_type get_table_id(const std::string& name)
+  {
+	  return table_oids[name];
   }
 
   /**

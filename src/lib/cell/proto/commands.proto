@@ -1,0 +1,43 @@
+package lattice.cell;
+
+message CommandRequest {
+   enum Kind  {
+      PREPARE = 0;
+      FETCH = 1;  
+   }
+   
+   required Kind kind = 1;
+ 
+   // If this is a PREPARE message, then it may
+   // create a transaction, and it may create one
+   // or more cursors.   
+   message Prepare {
+      optional bool create_transaction = 1;
+      repeated string cursors          = 2;
+      optional uint64 transaction_id   = 3; // If not creating a new transaction
+                                            // but creating more cursors.         
+   }   
+   
+   optional Prepare prepare = 2;
+}
+
+message CommandResponse {
+   enum Kind  {
+      PREPARE = 0;
+      FETCH   = 1;  
+   }
+   
+   required Kind kind = 1;
+ 
+   // If this is a PREPARE message, then it may
+   // contain a transaction id, as well as one
+   // or more cursor id. The order will be the
+   // same order as the cursors were specified
+   // in the request.
+   message Prepare {
+      optional uint64 transaction_id   = 1;
+      repeated uint64 cursor_ids       = 2;         
+   }   
+   
+   optional Prepare prepare = 2;
+}
