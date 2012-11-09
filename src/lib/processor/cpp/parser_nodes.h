@@ -146,6 +146,11 @@ public:
 	{
 		return name;
 	}
+
+	int get_index()
+	{
+		return column_index;
+	}
 };
 
 /**

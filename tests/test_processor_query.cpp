@@ -152,4 +152,17 @@ TEST_F(QueryTest, CanSelectMultiColumnSubtraction)
   EXPECT_EQ(std::string("10"), r[1]);
 }
 
+TEST_F(QueryTest, CanSelectColumn)
+{
+  using namespace lattice::processor;
+
+  query q(*md, "select id from test_table_1");
+
+  auto r = q.fetch_one();
+
+  ASSERT_EQ(2, r.size());
+  EXPECT_EQ(std::string("20"), r[0]);
+  EXPECT_EQ(std::string("10"), r[1]);
+}
+
 

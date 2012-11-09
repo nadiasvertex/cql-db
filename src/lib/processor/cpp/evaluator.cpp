@@ -9,59 +9,9 @@ namespace processor {
 
 #include <processor/cpp/evaluator_row_fetch.h>
 
-static std::string*
-convert_value_to_string(cell::column::data_type type, void* value)
-{
-	cell::data_value dv;
-
-	switch (type)
-		{
-		case cell::column::data_type::smallint:
-			{
-				auto* i16 = static_cast<std::int16_t*>(value);
-				dv.set_value(type, *i16);
-				return new std::string(dv.to_string());
-			}
-
-		case cell::column::data_type::integer:
-			{
-				auto* i32 = static_cast<std::int32_t*>(value);
-				dv.set_value(type, *i32);
-				return new std::string(dv.to_string());
-			}
-
-		case cell::column::data_type::bigint:
-			{
-				auto* i64 = static_cast<std::int64_t*>(value);
-				dv.set_value(type, *i64);
-				return new std::string(dv.to_string());
-			}
-
-		case cell::column::data_type::real:
-			{
-				auto* f32 = static_cast<float*>(value);
-				dv.set_value(type, *f32);
-				return new std::string(dv.to_string());
-			}
-
-		case cell::column::data_type::double_precision:
-			{
-				auto* f64 = static_cast<float*>(value);
-				dv.set_value(type, *f64);
-				return new std::string(dv.to_string());
-			}
-
-		case cell::column::data_type::varchar:
-			return new std::string(*static_cast<std::string*>(value));
-		}
-	throw std::invalid_argument(
-			"unknown value type when converting value to string.");
-
-}
-
 select_expr_evaluator::select_expr_evaluator(metadata& _md,
-		jit_context& context, actions::node_handle_type _se) :
-		md(_md), jit_function(context), se(_se)
+		jit_context& context, actions::node_handle_type _se, select_fields_handle _fields) :
+		md(_md), jit_function(context), se(_se), fields(_fields)
 {
 	create();
 	set_recompilable();
@@ -192,9 +142,13 @@ auto select_expr_evaluator::eval_leaf(actions::node_handle_type node) -> value_t
 								"node claims to be a column reference, but dynamic cast yields nullptr.");
 					}
 
-				auto col_name = cr->get_name();
+				auto index = cr->get_index();
+				auto& type = fields->column_types[index];
 
+				auto jv_index = new_constant(index, jit_type_sys_int);
+				auto jv_row_buffer = get_param(0);
 
+				return gen_column_fetch(type.type, jv_row_buffer, jv_index);
 			}
 		break;
 

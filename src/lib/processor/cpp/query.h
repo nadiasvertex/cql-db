@@ -27,12 +27,6 @@ public:
 	/** Contains the output of a select. */
 	typedef std::vector<std::string> tuple_type;
 
-	/** Contains the output of the syntax check. */
-	typedef std::tuple<std::string, bool> check_type;
-
-	/** Contains a mapping between a column index and the type of the column. */
-	typedef std::unordered_map<int, cell::column> column_index_type_map_type;
-
 private:
 	metadata& md;
 

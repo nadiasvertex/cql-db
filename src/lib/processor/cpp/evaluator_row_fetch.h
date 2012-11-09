@@ -38,3 +38,52 @@ static std::string* fetch_string_value(row_buffer* rb, int column_index)
 	return rb->get_current_row()[column_index].raw_string_value();
 }
 
+static std::string*
+convert_value_to_string(cell::column::data_type type, void* value)
+{
+	cell::data_value dv;
+
+	switch (type)
+		{
+		case cell::column::data_type::smallint:
+			{
+				auto* i16 = static_cast<std::int16_t*>(value);
+				dv.set_value(type, *i16);
+				return new std::string(dv.to_string());
+			}
+
+		case cell::column::data_type::integer:
+			{
+				auto* i32 = static_cast<std::int32_t*>(value);
+				dv.set_value(type, *i32);
+				return new std::string(dv.to_string());
+			}
+
+		case cell::column::data_type::bigint:
+			{
+				auto* i64 = static_cast<std::int64_t*>(value);
+				dv.set_value(type, *i64);
+				return new std::string(dv.to_string());
+			}
+
+		case cell::column::data_type::real:
+			{
+				auto* f32 = static_cast<float*>(value);
+				dv.set_value(type, *f32);
+				return new std::string(dv.to_string());
+			}
+
+		case cell::column::data_type::double_precision:
+			{
+				auto* f64 = static_cast<float*>(value);
+				dv.set_value(type, *f64);
+				return new std::string(dv.to_string());
+			}
+
+		case cell::column::data_type::varchar:
+			return new std::string(*static_cast<std::string*>(value));
+		}
+	throw std::invalid_argument(
+			"unknown value type when converting value to string.");
+
+}

@@ -6,6 +6,7 @@
 
 #include <jit/jit-plus.h>
 #include <processor/cpp/query_parser.h>
+#include <processor/cpp/select_fields.h>
 
 namespace lattice {
 namespace processor {
@@ -18,10 +19,11 @@ public:
 private:
 	metadata& md;
 	actions::node_handle_type se;
+	select_fields_handle fields;
 
 public:
 	select_expr_evaluator(metadata& _md, jit_context& context,
-			actions::node_handle_type _se);
+			actions::node_handle_type _se, select_fields_handle _fields);
 	/**
 	 * Build the code to evaluate this select expression.
 	 */

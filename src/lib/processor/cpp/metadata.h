@@ -65,9 +65,10 @@ public:
 	 *
 	 * @returns: true if it worked, false otherwise.
 	 */
-	bool create_table(std::string name, std::vector<cell::column> columns)
+	bool create_table(const std::string& name, std::vector<cell::column> columns)
 	{
-		table t;
+		auto pos = tables.insert(std::make_pair(name, table())).first;
+		auto& t = pos->second;
 
 		for (auto i = 0; i < columns.size(); ++i)
 			{
@@ -76,6 +77,18 @@ public:
 			}
 
 		return true;
+	}
+
+	/**
+	 * Discovers whether the specified table event exists.
+	 *
+	 * @param name: The table name to look for.
+	 *
+	 * @returns: true if the name exists, false otherwise.
+	 */
+	bool has_table(const std::string& name) const
+	{
+		return tables.find(name) != tables.end();
 	}
 
 	/** Find the type of a column.
@@ -89,7 +102,7 @@ public:
 	 *
 	 */
 	std::tuple<cell::column, bool> get_column_type(const std::string& table_name,
-			const std::string& column_name)
+			const std::string& column_name) const
 	{
 		auto tpos = tables.find(table_name);
 		if (tpos==tables.end())
