@@ -26,4 +26,8 @@ TEST(DbTest, CanCreateTable)
     })
   );
 
+  auto tbl_id = db.get_table_id("test1");
+  auto t = db.get_table(tbl_id);
+
+  ASSERT_NE(nullptr, t.get());
 }
