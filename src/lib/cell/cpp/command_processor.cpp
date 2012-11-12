@@ -66,21 +66,65 @@ std::string command_processor::fetch_columns(page::object_id_type txn_id,
 }
 
 bool command_processor::insert_columns(page::object_id_type txn_id,
-      page::object_id_type table_id, std::vector<int> column_indexes)
+      page::object_id_type table_id, std::vector<int> column_indexes,
+      const std::string& data)
 {
    auto pos = transactions.find(txn_id);
    if (pos == transactions.end())
       {
-        return false;
+         return false;
       }
 
-   // Get transaction
-   auto& txn = pos->second;
+   auto& txn = pos->second;           // Get transaction
+   auto t = db.get_table(table_id);   // Get table
+
+   std::vector<bool> present;
+
+   present.assign(t->get_number_of_columns(), false);
+   for (auto index : column_indexes)
+      {
+         present[index] = true;
+      }
+
+   txn.insert_columns(t, data, present);
 }
 
 //                                                                           //
 // ============------------ Command Processing -------------================ //
 //                                                                           //
+
+CommandResponse command_processor::insert(const CommandRequest& request,
+      CommandResponse& resp)
+{
+   auto* insert_response = resp.mutable_insert();
+
+   resp.set_kind(CommandResponse::INSERT);
+
+   auto& msg = request.insert();
+   auto txn_id = msg.transaction_id();
+   auto tbl_id = msg.table_id();
+
+   auto column_mask = msg.column_mask();
+   std::vector<int> column_indexes;
+
+   // Optimization note: check how many columns exist instead
+   // of checking all 64 bits each time.
+   for (auto b = 0; b < 64; ++b)
+      {
+         column_indexes.push_back(b);
+      }
+
+   // Loop over the data packets for this insert.
+   for (auto j = 0; j < msg.data_size(); ++j)
+      {
+         insert_columns(txn_id, tbl_id, column_indexes, msg.data(j));
+      }
+
+   // In the future, actually check to see if this worked.
+   insert_response->set_row_count(msg.data_size());
+
+   return resp;
+}
 
 CommandResponse command_processor::fetch(const CommandRequest& request,
       CommandResponse& resp)

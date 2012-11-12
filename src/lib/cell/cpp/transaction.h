@@ -87,30 +87,12 @@ public:
     * until the transaction commits.
     */
    bool insert_columns(table_handle_type t, const std::string& data,
-         const std::vector<bool>& present)
-   {
-      auto pos = versions.find(t->get_table_id());
-      if (pos == versions.end())
-         {
-            version_type version
-               {
-               t
-               };
-            pos =
-                  versions.insert(std::make_pair(t->get_table_id(), version)).first;
-         }
+         const std::vector<bool>& present);
 
-      auto& version = pos->second;
-
-      auto row_id = t->get_next_row_id();
-      auto vpos = version.added.insert(
-            std::make_pair(row_id, table::row_type())).first;
-
-      t->insert_row(vpos->second, present,
-            static_cast<const uint8_t*>(static_cast<const void*>(data.c_str())),
-            data.size());
-   }
-
+   /**
+    * Moves modifications into the table store.
+    */
+   bool commit();
 };
 
 } // namespace cell

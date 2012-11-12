@@ -36,10 +36,9 @@ private:
    page::object_id_type next_transaction_id;
 
 private:
-   CommandResponse prepare(const CommandRequest& request,
-         CommandResponse& response);
-   CommandResponse fetch(const CommandRequest& request,
-         CommandResponse& response);
+   CommandResponse prepare(const CommandRequest& req, CommandResponse& resp);
+   CommandResponse fetch(const CommandRequest& req, CommandResponse& resp);
+   CommandResponse insert(const CommandRequest& req, CommandResponse& resp);
 
 public:
    command_processor()
@@ -98,9 +97,11 @@ public:
     * @param table_id: The table to insert columns into.
     * @param column_indexes: The list of column indexes to return. They will
     *                        be returned in the order specified.
+    * @param data: The actual data to insert.
     */
    bool insert_columns(page::object_id_type txn_id,
-         page::object_id_type table_id, std::vector<int> column_indexes);
+         page::object_id_type table_id, std::vector<int> column_indexes,
+         const std::string& data);
 
    /**
     * Process the command request and provide an equivalent
