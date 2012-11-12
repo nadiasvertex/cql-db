@@ -1,4 +1,6 @@
 #include <sstream>
+#include <vector>
+
 #include <cell/cpp/command_processor.h>
 #include <cell/cpp/data_value.h>
 
@@ -63,13 +65,65 @@ std::string command_processor::fetch_columns(page::object_id_type txn_id,
    return out.str();
 }
 
+bool command_processor::insert_columns(page::object_id_type txn_id,
+      page::object_id_type table_id, std::vector<int> column_indexes)
+{
+   auto pos = transactions.find(txn_id);
+   if (pos == transactions.end())
+      {
+        return false;
+      }
+
+   // Get transaction
+   auto& txn = pos->second;
+}
+
 //                                                                           //
 // ============------------ Command Processing -------------================ //
 //                                                                           //
 
-CommandResponse command_processor::prepare(const CommandRequest& request)
+CommandResponse command_processor::fetch(const CommandRequest& request,
+      CommandResponse& resp)
 {
-   CommandResponse resp;
+   auto* fetch_response = resp.mutable_fetch();
+
+   resp.set_kind(CommandResponse::FETCH);
+
+   auto& msg = request.fetch();
+   auto txn_id = msg.transaction_id();
+
+   for (auto i = 0; i < msg.cursors_size(); ++i)
+      {
+         auto cursor_id = msg.cursors(i);
+         auto batch_size = msg.batch_size(i);
+         auto column_mask = msg.column_mask(i);
+
+         std::vector<int> column_indexes;
+
+         // Optimization note: check how many columns exist instead
+         // of checking all 64 bits each time.
+         for (auto b = 0; b < 64; ++b)
+            {
+               column_indexes.push_back(b);
+            }
+
+         // Fetch the batch for this cursor.
+         fetch_response->add_cursors(cursor_id);
+         for (auto j = 0; j < batch_size; ++j)
+            {
+               fetch_response->add_data(
+                     fetch_columns(txn_id, cursor_id, column_indexes));
+            }
+
+         fetch_response->add_batch_size(batch_size);
+      }
+
+   return resp;
+}
+
+CommandResponse command_processor::prepare(const CommandRequest& request,
+      CommandResponse& resp)
+{
    auto* prepare_response = resp.mutable_prepare();
 
    resp.set_kind(CommandResponse::PREPARE);
@@ -101,12 +155,19 @@ CommandResponse command_processor::prepare(const CommandRequest& request)
 
 CommandResponse command_processor::process(const CommandRequest& request)
 {
+   CommandResponse resp;
+
    switch (request.kind())
       {
       case CommandRequest::PREPARE:
-         return prepare(request);
+         return prepare(request, resp);
+      break;
+      case CommandRequest::FETCH:
+         return fetch(request, resp);
       break;
       }
+
+   return resp;
 }
 
 } // namespace cell

@@ -3,7 +3,8 @@ package lattice.cell;
 message CommandRequest {
    enum Kind  {
       PREPARE = 0;
-      FETCH = 1;  
+      FETCH   = 1;
+      INSERT  = 2;  
    }
    
    required Kind kind = 1;
@@ -16,15 +17,35 @@ message CommandRequest {
       repeated string cursors          = 2;
       optional uint64 transaction_id   = 3; // If not creating a new transaction
                                             // but creating more cursors.         
+   }
+   
+   // If this is a FETCH message, then it 
+   // will include a set of cursors it wants
+   // to read from. 
+   message Fetch {
+      required uint64 transaction_id   = 1; // The transaction id to fetch from.
+      repeated uint64 cursors          = 2; // The list of cursors to fetch.
+      repeated uint32 batch_size       = 3; // The number of rows to fetch for each cursor.
+      repeated uint64 column_mask      = 4; // Select up to 64 columns to fetch at once.
    }   
    
+   message Insert {
+      required uint64 transaction_id   = 1; // The transaction id to insert into.
+      required uint64 table_id         = 2; // The table to insert the data into.
+      required uint64 column_mask      = 3; // The columns present in the data.
+      repeated bytes  data             = 4; // The data to insert.  
+   }
+   
    optional Prepare prepare = 2;
+   optional Fetch   fetch   = 3;
+   optional Insert  insert  = 4;
 }
 
 message CommandResponse {
    enum Kind  {
       PREPARE = 0;
-      FETCH   = 1;  
+      FETCH   = 1;
+      INSERT  = 2;  
    }
    
    required Kind kind = 1;
@@ -39,5 +60,22 @@ message CommandResponse {
       repeated uint64 cursor_ids       = 2;         
    }   
    
+   // The FETCH message contains an ordered
+   // set of cursors and an ordered set of
+   // data packets. 
+   message Fetch {
+        required uint64 transaction_id = 1;
+        repeated uint64 cursors        = 2;
+        repeated bytes  data           = 3;
+        repeated uint32 batch_size     = 4; // The number of rows fetched for each cursor.
+   }
+   
+   message Insert {
+        required uint64 transaction_id = 1;
+        required uint64 row_count      = 2; // Number of rows actually inserted.
+   }
+   
    optional Prepare prepare = 2;
+   optional Fetch   fetch   = 3;
+   optional Insert  insert  = 4;
 }

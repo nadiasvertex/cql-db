@@ -1,8 +1,8 @@
 insert_case_txt = """
         case {type}:
           {{
-            {cpptype} *data = static_cast<{cpptype}*>(
-                       static_cast<void *>(buffer+offset)
+            const {cpptype} *data = static_cast<const {cpptype}*>(
+                       static_cast<const void *>(buffer+offset)
             );
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof({cpptype}))
@@ -10,25 +10,6 @@ insert_case_txt = """
                return false;
               }}
             offset += bytes_written;
-          }}
-          break;
-"""
-
-fetch_case_txt = """
-        case {type}:
-          {{
-            {cpptype} *data = static_cast<{cpptype}*>(
-                       static_cast<void *>(buffer+offset)
-            );
-            auto results = p->fetch_object(oid, *data);
-            if (std::get<0>(results)==false ||
-                std::get<1>(results)==0 ||
-                std::get<1>(results)<sizeof({cpptype}))
-              {{
-                 return false;
-              }}
-
-            offset += std::get<1>(results);
           }}
           break;
 """
@@ -68,12 +49,6 @@ with open("src/lib/cell/cpp/row_insert_int_ops.h", "w") as out:
       d = {"cpptype":cpptype,
            "type":sqltype }
       out.write(insert_case_txt.format(**d))
-
-with open("src/lib/cell/cpp/row_fetch_int_ops.h", "w") as out:
-   for cpptype, sqltype in primitive_types:
-      d = {"cpptype":cpptype,
-           "type":sqltype }
-      out.write(fetch_case_txt.format(**d))
 
 with open("src/lib/cell/cpp/row_to_binary_int_ops.h", "w") as out:
    for cpptype, sqltype in primitive_types:

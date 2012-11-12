@@ -5,11 +5,10 @@
 namespace lattice {
 namespace cell {
 
-bool table::insert_row(page::object_id_type row_id, column_present_type present,
-		std::uint8_t *buffer, std::size_t buffer_size)
+bool table::insert_row(row_type& row, const column_present_type& present,
+		const std::uint8_t *buffer, std::size_t buffer_size)
 {
 	std::size_t offset = 0;
-	row_type row;
 
 	for (auto i = 0; i < number_of_columns; ++i)
 		{
@@ -44,11 +43,14 @@ bool table::insert_row(page::object_id_type row_id, column_present_type present,
 				}
 		}
 
-	rows.insert(
-		{
-		row_id, std::move(row)
-		});
 	return true;
+}
+
+bool table::commit_row(page::object_id_type row_id, const row_type& row)
+{
+   rows[row_id] = row;
+
+   return true;
 }
 
 bool table::fetch_row(row_list_type::iterator& pos, const column_present_type& present,

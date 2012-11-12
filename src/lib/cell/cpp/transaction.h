@@ -11,68 +11,105 @@ namespace cell {
 
 class transaction
 {
-	typedef std::unordered_set<page::object_id_type> row_id_list_type;
+   typedef std::unordered_set<page::object_id_type> row_id_list_type;
 
-	typedef struct
-	{
-		/** Reference to the table adjusted. */
-		table_handle_type t;
+   typedef struct
+   {
+      /** Reference to the table adjusted. */
+      table_handle_type t;
 
-		/** List of rows added during this transaction. */
-		row_id_list_type added;
+      /** List of rows added during this transaction. */
+      table::row_list_type added;
 
-		/** List of rows updated during this transaction. */
-		row_id_list_type updated;
+      /** List of rows updated during this transaction. */
+      table::row_list_type updated;
 
-		/** List of rows deleted during this transaction. */
-		row_id_list_type deleted;
+      /** List of rows deleted during this transaction. */
+      row_id_list_type deleted;
 
-	} version_type;
+   } version_type;
 
-	typedef struct
-	{
-		/** The iterator for this cursor. */
-		table::row_list_type::iterator it;
+   typedef struct
+   {
+      /** The iterator for this cursor. */
+      table::row_list_type::iterator it;
 
-		/** Reference to the table the cursor is attached to. */
-		table_handle_type t;
-	} cursor_type;
+      /** Reference to the table the cursor is attached to. */
+      table_handle_type t;
+   } cursor_type;
 
-	/** The map of version information for this transaction. */
-	std::unordered_map<page::object_id_type, version_type> versions;
+   /** The map of version information for this transaction. The key is the table
+    * id.*/
+   std::unordered_map<page::object_id_type, version_type> versions;
 
-	/** Maps a cursor id to a cursor for a row. */
-	std::unordered_map<page::object_id_type, cursor_type> row_cursor_map;
+   /** Maps a cursor id to a cursor for a row. */
+   std::unordered_map<page::object_id_type, cursor_type> row_cursor_map;
 
-	/** Tracks cursor identifiers. */
-	page::object_id_type next_cursor_id;
+   /** Tracks cursor identifiers. */
+   page::object_id_type next_cursor_id;
 
 public:
-	transaction():next_cursor_id(0) {};
+   transaction() :
+         next_cursor_id(0)
+   {
+   }
+   ;
 
-	/**
-	 * Creates a new cursor object attached to this transaction.
-	 *
-	 * @param t: A handle to the table the cursor is attached to.
-	 */
-	page::object_id_type create_cursor(table_handle_type t)
-	{
-		auto cursor_id = ++next_cursor_id;
-		row_cursor_map.insert(std::make_pair(cursor_id, cursor_type{t->begin(), t}));
+   /**
+    * Creates a new cursor object attached to this transaction.
+    *
+    * @param t: A handle to the table the cursor is attached to.
+    */
+   page::object_id_type create_cursor(table_handle_type t)
+   {
+      auto cursor_id = ++next_cursor_id;
+      row_cursor_map.insert(std::make_pair(cursor_id, cursor_type
+         {
+         t->begin(), t
+         }));
 
-		return cursor_id;
-	}
+      return cursor_id;
+   }
 
-	/**
-	 * Provides a reference to the cursor object identified
-	 * by the given cursor id.
-	 *
-	 * @param cursor_id: The id of the cursor to fetch.
-	 */
-	cursor_type& get_cursor(page::object_id_type cursor_id)
-	{
-		return row_cursor_map[cursor_id];
-	}
+   /**
+    * Provides a reference to the cursor object identified
+    * by the given cursor id.
+    *
+    * @param cursor_id: The id of the cursor to fetch.
+    */
+   cursor_type& get_cursor(page::object_id_type cursor_id)
+   {
+      return row_cursor_map[cursor_id];
+   }
+
+   /**
+    * Insert a new row into a table. The row will not be visible in the table
+    * until the transaction commits.
+    */
+   bool insert_columns(table_handle_type t, const std::string& data,
+         const std::vector<bool>& present)
+   {
+      auto pos = versions.find(t->get_table_id());
+      if (pos == versions.end())
+         {
+            version_type version
+               {
+               t
+               };
+            pos =
+                  versions.insert(std::make_pair(t->get_table_id(), version)).first;
+         }
+
+      auto& version = pos->second;
+
+      auto row_id = t->get_next_row_id();
+      auto vpos = version.added.insert(
+            std::make_pair(row_id, table::row_type())).first;
+
+      t->insert_row(vpos->second, present,
+            static_cast<const uint8_t*>(static_cast<const void*>(data.c_str())),
+            data.size());
+   }
 
 };
 

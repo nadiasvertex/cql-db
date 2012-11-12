@@ -61,7 +61,7 @@ public:
   {
 
     auto oid = next_table_id++;
-    table_handle_type t = std::make_shared < table > (columns.size());
+    table_handle_type t = std::make_shared < table > (oid, columns.size());
 
     for (auto i = 0; i < columns.size(); ++i)
       {
