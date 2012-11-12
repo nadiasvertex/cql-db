@@ -114,6 +114,8 @@ CommandResponse command_processor::insert(const CommandRequest& request,
          column_indexes.push_back(b);
       }
 
+   insert_response->set_transaction_id(txn_id);
+
    // Loop over the data packets for this insert.
    for (auto j = 0; j < msg.data_size(); ++j)
       {
@@ -208,6 +210,9 @@ CommandResponse command_processor::process(const CommandRequest& request)
       break;
       case CommandRequest::FETCH:
          return fetch(request, resp);
+      break;
+      case CommandRequest::INSERT:
+         return insert(request, resp);
       break;
       }
 

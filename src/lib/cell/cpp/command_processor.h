@@ -47,6 +47,14 @@ public:
    ;
 
    /**
+    * Provides access to the database object.
+    */
+   database& get_database()
+   {
+      return db;
+   }
+
+   /**
     * Create a table.
     *
     * @param name: The name of the table.
