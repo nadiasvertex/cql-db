@@ -7,7 +7,8 @@ namespace cell {
 enum class isolation_level
 {
    READ_UNCOMMITTED,
-   READ_COMMITTED
+   READ_COMMITTED,
+   SNAPSHOT
 };
 
 } // namespace cell

@@ -11,6 +11,11 @@
 namespace lattice {
 namespace cell {
 
+/**
+ * Indicates if a column is present in a data operation.
+ */
+typedef std::vector<bool> column_present_type;
+
 class row_value
 {
 public:
@@ -23,6 +28,14 @@ private:
    /** Indicates who is updating this row. If non-zero, this row is locked for
     * writes by other transaction. */
    transaction_id transaction_lock_id;
+
+   /** This field does double duty: if the row is outright deleted, this serves
+    * as the tombstone marker so that the row can be garbage collected. If
+    * the row is updated, it tells us at which point the row is no longer
+    * visible. Once all transactions <= transaction_deleted_id have committed,
+    * this row can be removed from the data store.
+    */
+   transaction_id transaction_deleted_id;
 
    /** The number of columns in the row. */
    column_count_type number_of_columns;
@@ -99,8 +112,55 @@ public:
    }
 
    /**
-    * Marks this row as committed, and updates the write id.
+    * For every bit where the 'present' vector is false, it copies the column
+    * information from the 'o' row.
     *
+    * @param txn_id: The transaction id doing the update.
+    * @param present: A vector of bool indicating if column data is present.
+    * @param o: An older version of this row from which to copy missing columns.
+    *
+    * @returns: true if the update can occur, false if the row is locked by
+    *           someone else.
+    */
+   bool update(const transaction_id& txn_id, const column_present_type& present,
+         const row_value& o)
+   {
+      if (is_locked(txn_id))
+         {
+            return false;
+         }
+
+      for (auto i = 0; i < present.size(); ++i)
+         {
+            if (present[i] == false)
+               {
+                  column_oids[i] = o.column_oids[i];
+               }
+         }
+
+      return true;
+   }
+
+   /**
+    * Marks this row as deleted.
+    *
+    * @param: txn_id: The transaction id that deleted the row.
+    *
+    * @returns: true if the transaction committed, false otherwise.
+    */
+   bool remove(const transaction_id& txn_id)
+   {
+      if (is_locked(txn_id))
+         {
+            transaction_deleted_id = txn_id;
+            return true;
+         }
+
+      return false;
+   }
+
+   /**
+    * Marks this row as committed, and updates the write id.
     *
     * @param: txn_id: The transaction id to commit.
     *
@@ -108,7 +168,7 @@ public:
     *
     * @note: Automatically unlocks the rows.
     */
-   bool commit(transaction_id txn_id)
+   bool commit(const transaction_id& txn_id)
    {
       if (unlock(txn_id))
          {
@@ -122,7 +182,36 @@ public:
    }
 
    /**
-    * Determines if this row is visible to the given transaction.
+    * Determines if this row is visible to the given transaction using
+    * snapshot isolation semantics. The query always sees the row
+    * as it existed when the transaction began.
+    *
+    * @param txn_id: The transaction id requested.
+    *
+    * @returns: true if the row is visible to txn_id, false otherwise.
+    */
+   bool is_snapshot_visible(const transaction_id& txn_id) const
+   {
+      using namespace std::rel_ops;
+
+      // If the row is committed its write id must be
+      // <= the current transaction id, AND the row
+      // must not be deleted, or must have been deleted
+      // in a transaction > the current transaction id.
+      if (committed)
+         {
+            return transaction_write_id <= txn_id
+                  && (transaction_deleted_id.empty()
+                        || transaction_deleted_id > txn_id);
+         }
+
+      return transaction_lock_id == txn_id && transaction_deleted_id.empty();
+   }
+
+   /**
+    * Determines if this row is visible to the given transaction using
+    * read committed isolation semantics. The query always sees the latest
+    * committed row.
     *
     * @param txn_id: The transaction id requested.
     *
@@ -132,12 +221,34 @@ public:
    {
       using namespace std::rel_ops;
 
+      // If the row is committed its write id must be
+      // <= the current transaction id, AND the row
+      // must not be deleted.
       if (committed)
          {
-            return transaction_write_id <= txn_id;
+            return transaction_write_id <= txn_id
+                  && transaction_deleted_id.empty();
+
          }
 
-      return transaction_lock_id == txn_id;
+      return transaction_lock_id == txn_id && transaction_deleted_id.empty();
+   }
+
+   /**
+    * Determines if this row is locked for this transaction.
+    *
+    * @param txn_id: The transaction id requested.
+    *
+    * @returns: true if the row is locked to txn_id, false otherwise.
+    */
+   bool is_locked(const transaction_id& txn_id) const
+   {
+      if (transaction_lock_id.empty())
+         {
+            return false;
+         }
+
+      return !(transaction_lock_id == txn_id);
    }
 
    /**
@@ -228,6 +339,6 @@ public:
 };
 
 } // namespace cell
-} // namespace lattice
+         } // namespace lattice
 
 #endif // __LATTICE_CELL_ROW_VALUE_H__

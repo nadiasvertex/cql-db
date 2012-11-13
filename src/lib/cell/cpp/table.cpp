@@ -75,9 +75,21 @@ table::fetch_code table::fetch_row(const transaction_id& tid,
    auto& row = pos->second;
 
    // Check to see if the row is visible to this transaction.
-   if (level == isolation_level::READ_COMMITTED && !row.is_visible(tid))
+   switch (level)
       {
-         return fetch_code::ISOLATED;
+      case isolation_level::READ_COMMITTED:
+         if (!row.is_visible(tid))
+            {
+               return fetch_code::ISOLATED;
+            }
+      break;
+
+      case isolation_level::SNAPSHOT:
+         if (!row.is_snapshot_visible(tid))
+            {
+               return fetch_code::ISOLATED;
+            }
+      break;
       }
 
    // Read columns from the row as requested.
@@ -124,6 +136,71 @@ table::fetch_code table::fetch_row(const transaction_id& tid, const row_id& rid,
       }
 
    return fetch_row(tid, pos, present, buffer, level);
+}
+
+table::update_code table::update_row(const transaction_id& tid,
+      row_list_type::iterator& pos, const column_present_type& present,
+      const std::string& buffer, isolation_level level)
+{
+   // Get a reference to the row.
+   auto& old_row = pos->second;
+
+   // Check to see if the row is visible to this transaction. This may
+   // happen if a row meets the predicate, but isn't actually visible
+   // to the transaction where the update is happening.
+   if (level == isolation_level::READ_COMMITTED && !old_row.is_visible(tid))
+      {
+         return update_code::ISOLATED;
+      }
+
+   // If someone is already updating the row, abort.
+   if (old_row.is_locked(tid))
+      {
+         return update_code::CONFLICT;
+      }
+
+   row_id rid;
+
+   switch (insert_row(tid, rid, present, buffer))
+      {
+      default:
+         return update_code::UNEXPECTED_INSERT_ERROR;
+
+      case insert_code::UNDER_FLOW:
+         return update_code::UNDER_FLOW;
+
+      case insert_code::UNKNOWN_DATA_TYPE:
+         return update_code::UNKNOWN_DATA_TYPE;
+
+      case insert_code::OUT_OF_MEMORY:
+         return update_code::OUT_OF_MEMORY;
+
+      case insert_code::SUCCESS:
+      break;
+      }
+
+   // Find the row that was just inserted.
+   pos = rows.find(rid);
+   auto& new_row = pos->second;
+
+   // Update it so that it has copies of all the
+   // unchanged data.
+   new_row.update(tid, present, old_row);
+}
+
+table::update_code table::update_row(const transaction_id& tid,
+      const row_id& rid, const column_present_type& present,
+      const std::string& buffer, isolation_level level)
+{
+   // See if the row exists.
+   auto pos = rows.find(rid);
+   if (pos == rows.end())
+      {
+         return update_code::DOES_NOT_EXIST;
+      }
+
+   return update_row(tid, pos, present, buffer, level);
+
 }
 
 bool table::to_binary(const column_present_type& present,

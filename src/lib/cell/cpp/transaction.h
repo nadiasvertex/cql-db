@@ -107,8 +107,7 @@ public:
    }
 
    /**
-    * Insert a new row into a table. The row will not be visible in the table
-    * until the transaction commits.
+    * Insert a new row into a table.
     */
    bool insert_columns(table_handle_type t, const std::string& data,
          const std::vector<bool>& present);
@@ -119,9 +118,15 @@ public:
    bool commit();
 
    /**
-    * Fetch columns from a table, respecting transactional boundaries.
+    * Fetch columns from a table.
     */
    bool fetch_columns(cursor_type &cursor, std::string& data,
+         const std::vector<bool>& present);
+
+   /**
+    * Update columns in a table.
+    */
+   bool update_columns(cursor_type &cursor, std::string& data,
          const std::vector<bool>& present);
 };
 

@@ -91,6 +91,12 @@ bool transaction::fetch_columns(cursor_type &cursor, std::string& data,
       }
 }
 
+bool transaction::update_columns(cursor_type &cursor, std::string& data,
+      const std::vector<bool>& present)
+{
+
+}
+
 } // namespace cell
 } // namespace lattice
 

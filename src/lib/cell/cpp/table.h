@@ -56,6 +56,38 @@ public:
                         // data specified in one or more columns.
    };
 
+   /** Indicates various results that a row update can issue. */
+   enum class update_code
+   {
+      SUCCESS,          // The update worked.
+
+      DOES_NOT_EXIST,   // No such row
+
+      CONFLICT,         // Someone else is already updating that row.
+
+      ISOLATED,         // The row exists, but you cannot update it because
+                        // of your current transactional constraints.
+
+      UNDER_FLOW,       // The buffer passed did not have as much data as
+                        // the call claimed.
+
+      OUT_OF_MEMORY,    // Unable to update data because there is not
+                        // enough memory to allocate the structures to
+                        // hold the data.
+
+      CORRUPT_PAGE,     // The page containing the column recorded a data
+                        // offset that was not valid.
+
+      UNKNOWN_DATA_TYPE,// The storage engine does not know how to store the
+                        // data specified in one or more columns.
+
+      UNEXPECTED_INSERT_ERROR, // The insert issued an error that was not
+                               // expected.
+
+      UNEXPECTED_FETCH_ERROR   // The fetch issued an error that was not
+                               // expected.
+   };
+
    /**
     * A row contains pointers to the data for all columns stored in a row.
     */
@@ -70,11 +102,6 @@ public:
     * A hash of rows.
     */
    typedef std::unordered_map<row_id, row_type, row_id_hash> row_list_type;
-
-   /**
-    * Indicates if a column is present in a data operation.
-    */
-   typedef std::vector<bool> column_present_type;
 
    /**
     * Provides storage for text results read from a command string.
@@ -287,6 +314,42 @@ public:
     */
    fetch_code fetch_row(const transaction_id& tid, const row_id& rid,
          const column_present_type& present, std::ostream& buffer,
+         isolation_level level = isolation_level::READ_COMMITTED);
+
+   /**
+    * Update a row in the table.
+    *
+    * @param pos: An iterator pointing to the a row.
+    *
+    * @param present: Each bit indicates whether the corresponding
+    *                 column should be present. If the column is
+    *                 marked present in this vector, it will be
+    *                 read from the column store and written into
+    *                 the buffer.
+    *
+    * @param buffer: The data buffer to update from.
+    */
+   update_code update_row(const transaction_id& tid,
+         row_list_type::iterator& pos, const column_present_type& present,
+         const std::string& buffer, isolation_level level =
+               isolation_level::READ_COMMITTED);
+
+   /**
+    * Update a row in the table.
+    *
+    * @param tid: The transaction id for the fetch context.
+    * @param rid: The oid for the row.
+    *
+    * @param present: Each bit indicates whether the corresponding
+    *                 column should be present. If the column is
+    *                 marked present in this vector, it will be
+    *                 read from the column store and written into
+    *                 the buffer.
+    *
+    * @param buffer: The buffer to update from.
+    */
+   update_code update_row(const transaction_id& tid, const row_id& rid,
+         const column_present_type& present, const std::string& buffer,
          isolation_level level = isolation_level::READ_COMMITTED);
 
    /**
