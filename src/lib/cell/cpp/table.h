@@ -8,6 +8,8 @@
 #include <unordered_map>
 
 #include <cell/cpp/unstringify.h>
+#include <cell/cpp/row_id.h>
+#include <cell/cpp/row_value.h>
 #include <cell/cpp/page.h>
 
 namespace lattice {
@@ -16,10 +18,47 @@ namespace cell {
 class table
 {
 public:
+   /** Indicates various results that a row fetch can issue. */
+   enum class fetch_code
+   {
+      SUCCESS,          // The fetch worked.
+
+      DOES_NOT_EXIST,   // No such row
+
+      ISOLATED,         // The row exists, but you are not allowed to view
+                        // it because of your current transactional constraints.
+
+      OVER_FLOW,        // The buffer passed was not large enough to receive
+                        // the requested data.
+
+      CORRUPT_PAGE,     // The page containing the column recorded a data
+                        // offset that was not valid.
+
+      UNKNOWN_DATA_TYPE // The storage engine does not know how to read the
+                        // data specified in one or more columns.
+
+   };
+
+   /** Indicates various results that a row insert can issue. */
+   enum class insert_code
+   {
+      SUCCESS,          // The fetch worked.
+
+      UNDER_FLOW,       // The buffer passed did not have as much data as
+                        // the call claimed.
+
+      OUT_OF_MEMORY,    // Unable to insert data because there is not
+                        // enough memory to allocate the structures to
+                        // hold the data.
+
+      UNKNOWN_DATA_TYPE // The storage engine does not know how to store the
+                        // data specified in one or more columns.
+   };
+
    /**
     * A row contains pointers to the data for all columns stored in a row.
     */
-   typedef std::vector<page::object_id_type> row_type;
+   typedef row_value row_type;
 
    /**
     * The column data for the table.
@@ -29,7 +68,7 @@ public:
    /**
     * A hash of rows.
     */
-   typedef std::unordered_map<page::object_id_type, row_type> row_list_type;
+   typedef std::unordered_map<row_id, row_type, row_id_hash> row_list_type;
 
    /**
     * Indicates if a column is present in a data operation.
@@ -65,7 +104,7 @@ private:
    /**
     * The next row id to generate.
     */
-   page::object_id_type next_row_id;
+   row_id row_id_generator;
 
    /**
     * The table id.
@@ -75,8 +114,8 @@ private:
 public:
 
    table(page::object_id_type _table_id, unsigned int _number_of_columns) :
-         table_id(_table_id), number_of_columns(_number_of_columns), next_row_id(
-               0)
+            table_id(_table_id),
+            number_of_columns(_number_of_columns)
    {
       for (auto i = 0; i < number_of_columns; ++i)
          {
@@ -122,9 +161,9 @@ public:
    /**
     * Provides a new, unique row id.
     */
-   page::object_id_type get_next_row_id()
+   row_id get_next_row_id()
    {
-      return ++next_row_id;
+      return row_id_generator.next();
    }
 
    /**
@@ -187,71 +226,33 @@ public:
    /**
     * Insert the row into the table.
     *
-    * @param row: A reference to a row object. This gets filled in
-    *             with the column ids as they are written. The row
-    *             is not immediately stored in the table's row list
-    *             because that would violate transactional semantics.
+    * @param tid: The transaction id to associate this insert with.
+    * @param rid: A reference to a row_id object. This gets filled in
+    *             with the row id assigned by the inserter.
     *
     * @param present: Each bit indicates whether the corresponding
     *                 column is present. Only present columns will
     *                 be read from the data buffer and inserted into
     *                 the column store.
     *
-    * @param buffer: The data buffer to read data from.
-    * @param buffer_size: The size in bytes of the data buffer.
+    * @param data: The data buffer to read data from.
     */
-   bool insert_row(row_type& row, const column_present_type& present,
-         const std::uint8_t *buffer, std::size_t buffer_size);
+   insert_code insert_row(const transaction_id& tid, row_id& rid,
+         const column_present_type& present, const std::string& data);
 
    /**
     * Commit a row to the table store.
     *
-    * @param row_id: The id of the row.
-    * @param row: A reference to a row object. This should be an object
-    *             filled in by the insert_row() function above.
+    * @param tid: The id of the committing transaction.
+    * @param rid: The id of the row.
     *
     * This function essentially makes a row visible to other transactions. The
     * insert_row() call stages the data by writing the data into the various
-    * column stores.
+    * column stores. All other transactions will ignore the data until it is
+    * committed.
     *
     */
-   bool commit_row(page::object_id_type row_id, const row_type& row);
-
-   /**
-    * Fetch a row from the table.
-    *
-    * @param pos: An iterator pointing to a row.
-    *
-    * @param present: Each bit indicates whether the corresponding
-    *                 column should be present. If the column is
-    *                 marked present in this vector, it will be
-    *                 read from the column store and written into
-    *                 the buffer.
-    *
-    * @param buffer: The data buffer to write data into.
-    * @param buffer_size: The size in bytes of the data buffer.
-    */
-   bool fetch_row(row_list_type::iterator& pos,
-         const column_present_type& present, std::uint8_t *buffer,
-         std::size_t buffer_size);
-
-   /**
-    * Fetch a row from the table.
-    *
-    * @param row_id: The oid for the row.
-    *
-    * @param present: Each bit indicates whether the corresponding
-    *                 column should be present. If the column is
-    *                 marked present in this vector, it will be
-    *                 read from the column store and written into
-    *                 the buffer.
-    *
-    * @param buffer: The data buffer to write data into.
-    * @param buffer_size: The size in bytes of the data buffer.
-    */
-   bool fetch_row(page::object_id_type row_id,
-         const column_present_type& present, std::uint8_t *buffer,
-         std::size_t buffer_size);
+   bool commit_row(const transaction_id& tid, const row_id& rid);
 
    /**
     * Fetch a row from the table.
@@ -266,13 +267,14 @@ public:
     *
     * @param buffer: The data buffer to write data into.
     */
-   bool fetch_row(row_list_type::iterator& pos,
+   fetch_code fetch_row(const transaction_id& tid, row_list_type::iterator& pos,
          const column_present_type& present, std::ostream& buffer);
 
    /**
     * Fetch a row from the table.
     *
-    * @param row_id: The oid for the row.
+    * @param tid: The transaction id for the fetch context.
+    * @param rid: The oid for the row.
     *
     * @param present: Each bit indicates whether the corresponding
     *                 column should be present. If the column is
@@ -280,9 +282,9 @@ public:
     *                 read from the column store and written into
     *                 the buffer.
     *
-    * @param buffer: The data buffer to write data into.
+    * @param buffer: The buffer to write data into.
     */
-   bool fetch_row(page::object_id_type row_id,
+   fetch_code fetch_row(const transaction_id& tid, const row_id& rid,
          const column_present_type& present, std::ostream& buffer);
 
    /**
@@ -298,10 +300,9 @@ public:
     *               to be converted into a binary buffer.
     *
     * @param buffer: The data buffer to write data into.
-    * @param buffer_size: The size in bytes of the data buffer.
     */
-   bool to_binary(column_present_type present, text_tuple_type tuple,
-         std::uint8_t* buffer, std::size_t buffer_size);
+   bool to_binary(const column_present_type& present, const text_tuple_type& tuple,
+         std::string& buffer);
 
 };
 

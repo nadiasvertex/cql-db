@@ -5,24 +5,31 @@
 namespace lattice {
 namespace cell {
 
-bool table::insert_row(row_type& row, const column_present_type& present,
-      const std::uint8_t *buffer, std::size_t buffer_size)
+table::insert_code table::insert_row(const transaction_id& tid, row_id& rid,
+      const column_present_type& present, const std::string& data)
 {
    std::size_t offset = 0;
+   auto buffer_size = data.size();
+   auto* buffer =
+         static_cast<const std::uint8_t*>(static_cast<const void*>(data.c_str()));
+
+   std::vector<page::object_id_type> row_data;
+
+   rid = get_next_row_id();
 
    for (auto i = 0; i < number_of_columns; ++i)
       {
          // If the column is not present, don't try to write it.
          if (present.size() <= i || present[i] == false)
             {
-               row.push_back(0);
+               row_data.push_back(0);
                continue;
             }
 
          // Abort if we are out of buffer space.
          if (buffer_size <= offset)
             {
-               return false;
+               return insert_code::UNDER_FLOW;
             }
 
          // Fetch the bits of information we need to write
@@ -31,7 +38,7 @@ bool table::insert_row(row_type& row, const column_present_type& present,
          auto c = p->get_column_definition();
          auto oid = p->get_next_oid();
 
-         row.push_back(oid);
+         row_data.push_back(oid);
 
          switch (c->type)
             {
@@ -39,99 +46,44 @@ bool table::insert_row(row_type& row, const column_present_type& present,
 #include "row_insert_int_ops.h"
 
             default:
-               return false;
+               return insert_code::UNKNOWN_DATA_TYPE;
             }
       }
 
-   return true;
+   // Insert the data into the row buffer.
+   auto result = rows.insert(std::make_pair(rid, row_type(tid, row_data)));
+
+   return insert_code::SUCCESS;
 }
 
-bool table::commit_row(page::object_id_type row_id, const row_type& row)
+bool table::commit_row(const transaction_id& tid, const row_id& rid)
 {
-   rows[row_id] = row;
-
-   return true;
-}
-
-bool table::fetch_row(row_list_type::iterator& pos,
-      const column_present_type& present, std::uint8_t *buffer,
-      std::size_t buffer_size)
-{
-   std::size_t offset = 0;
-
-   // Get a reference to the row.
-   auto& row = pos->second;
-
-   // Read columns from the row as requested.
-   for (auto i = 0; i < number_of_columns; ++i)
+   auto pos = rows.find(rid);
+   if (pos != rows.end())
       {
-         // If the column is not present, don't try to write it.
-         if (present.size() <= i || present[i] == false)
-            {
-               continue;
-            }
-
-         // Abort if we are out of buffer space.
-         if (buffer_size <= offset)
-            {
-               return false;
-            }
-
-         // Fetch the bits of information we need to read
-         // the data properly.
-         auto p = column_data[i].get();
-         auto c = p->get_column_definition();
-         auto oid = row[i];
-
-         data_value dv(c->type);
-
-         // If the object id is zero, then the row does not
-         // have data for this item.
-         if (oid != 0)
-            {
-               // Sync up the data value.
-               auto seek = p->get_stream(oid);
-               if (std::get<0>(seek) == false)
-                  {
-                     return false;
-                  }
-
-               // Copy the data from the column store
-               dv.read(*std::get<1>(seek));
-            }
-
-         // Write the data into the buffer.
-         offset += dv.write(buffer + offset);
+         pos->second.commit(tid);
+         return true;
       }
-
-   return true;
+   return false;
 }
 
-bool table::fetch_row(page::object_id_type row_id,
-      const column_present_type& present, std::uint8_t *buffer,
-      std::size_t buffer_size)
-{
-   // See if the row exists.
-   auto pos = rows.find(row_id);
-   if (pos == rows.end())
-      {
-         return false;
-      }
-
-   return fetch_row(pos, present, buffer, buffer_size);
-
-}
-
-bool table::fetch_row(row_list_type::iterator& pos,
-      const column_present_type& present, std::ostream& buffer)
+table::fetch_code table::fetch_row(const transaction_id& tid,
+      row_list_type::iterator& pos, const column_present_type& present,
+      std::ostream& buffer)
 {
    // Get a reference to the row.
    auto& row = pos->second;
 
+   // Check to see if the row is visible to this transaction.
+   if (!row.is_visible(tid))
+      {
+         return fetch_code::ISOLATED;
+      }
+
    // Read columns from the row as requested.
    for (auto i = 0; i < number_of_columns; ++i)
       {
-         // If the column is not present, don't try to write it.
+         // If the column is not present, don't try to read it.
          if (present.size() <= i || present[i] == false)
             {
                continue;
@@ -139,9 +91,9 @@ bool table::fetch_row(row_list_type::iterator& pos,
 
          // Fetch the bits of information we need to read
          // the data properly.
-         auto p = column_data[i].get();
+         auto& p = column_data[i];
          auto c = p->get_column_definition();
-         auto oid = row[i];
+         auto oid = row.column(i);
 
          data_value dv(c->type);
 
@@ -149,7 +101,7 @@ bool table::fetch_row(row_list_type::iterator& pos,
          auto seek = p->get_stream(oid);
          if (std::get<0>(seek) == false)
             {
-               return false;
+               return fetch_code::CORRUPT_PAGE;
             }
 
          // Copy the data from the column store to the
@@ -157,26 +109,26 @@ bool table::fetch_row(row_list_type::iterator& pos,
          dv.copy(*std::get<1>(seek), buffer);
       }
 
-   return true;
+   return fetch_code::SUCCESS;
 }
 
-bool table::fetch_row(page::object_id_type row_id,
+table::fetch_code table::fetch_row(const transaction_id& tid, const row_id& rid,
       const column_present_type& present, std::ostream& buffer)
 {
    // See if the row exists.
-   auto pos = rows.find(row_id);
+   auto pos = rows.find(rid);
    if (pos == rows.end())
       {
-         return false;
+         return fetch_code::DOES_NOT_EXIST;
       }
 
-   return fetch_row(pos, present, buffer);
+   return fetch_row(tid, pos, present, buffer);
 }
 
-bool table::to_binary(column_present_type present, text_tuple_type tuple,
-      std::uint8_t* buffer, std::size_t buffer_size)
+bool table::to_binary(const column_present_type& present,
+      const text_tuple_type& tuple, std::string& buffer)
 {
-   std::size_t offset = 0;
+   std::stringstream out;
 
    for (auto i = 0; i < number_of_columns; ++i)
       {
@@ -186,29 +138,19 @@ bool table::to_binary(column_present_type present, text_tuple_type tuple,
                continue;
             }
 
-         // Abort if we are out of buffer space.
-         if (buffer_size <= offset)
-            {
-               return false;
-            }
-
          // Fetch the bits of information we need to write
          // the data properly.
          auto p = column_data[i].get();
          auto c = p->get_column_definition();
 
-         switch (c->type)
-            {
+         data_value dv;
+         dv.set_value(c->type, tuple[i]);
 
-#include "row_to_binary_int_ops.h"
-
-            default:
-               return false;
-            }
+         dv.write(out);
       }
 
+   buffer = out.str();
    return true;
-
 }
 
 } // end namespace cell

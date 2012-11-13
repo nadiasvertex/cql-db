@@ -7,7 +7,7 @@ insert_case_txt = """
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof({cpptype}))
               {{
-               return false;
+               return insert_code::OUT_OF_MEMORY;
               }}
             offset += bytes_written;
           }}

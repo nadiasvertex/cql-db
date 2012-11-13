@@ -1,31 +1,47 @@
+#include <sstream>
 #include <cell/cpp/transaction.h>
 
 namespace lattice {
 namespace cell {
 
-bool transaction::insert_columns(table_handle_type t, const std::string& data,
-      const std::vector<bool>& present)
+void transaction::create_version(table_handle_type t)
 {
-   auto pos = versions.find(t->get_table_id());
+   auto tbl_id = t->get_table_id();
+   auto pos = versions.find(tbl_id);
+
    if (pos == versions.end())
       {
          version_type version
             {
             t
             };
-         pos =
-               versions.insert(std::make_pair(t->get_table_id(), version)).first;
+         pos = versions.insert(std::make_pair(tbl_id, version)).first;
+      }
+
+}
+
+bool transaction::insert_columns(table_handle_type t, const std::string& data,
+      const std::vector<bool>& present)
+{
+   auto tbl_id = t->get_table_id();
+   auto pos = versions.find(tbl_id);
+   if (pos == versions.end())
+      {
+         create_version(t);
+         pos = versions.find(tbl_id);
       }
 
    auto& version = pos->second;
 
-   auto row_id = t->get_next_row_id();
-   auto vpos =
-         version.added.insert(std::make_pair(row_id, table::row_type())).first;
+   row_id rid;
 
-   t->insert_row(vpos->second, present,
-         static_cast<const uint8_t*>(static_cast<const void*>(data.c_str())),
-         data.size());
+   if (t->insert_row(id, rid, present, data) != table::insert_code::SUCCESS)
+      {
+         return false;
+      }
+
+   version.added.insert(rid);
+   return true;
 }
 
 bool transaction::commit()
@@ -39,11 +55,40 @@ bool transaction::commit()
          // Process all inserts.
          for (auto& row : version.second.added)
             {
-               t->commit_row(row.first, row.second);
+               t->commit_row(id, row);
             }
       }
 
    return true;
+}
+
+bool transaction::fetch_columns(cursor_type &cursor, std::string& data,
+      const std::vector<bool>& present)
+{
+   while (true)
+      {
+         // If the cursor is at the end, don't try to fetch.
+         if (cursor.it == cursor.t->end())
+            {
+               return false;
+            }
+
+         std::stringstream out;
+
+         switch (cursor.t->fetch_row(id, cursor.it, present, out))
+            {
+            case table::fetch_code::SUCCESS:    // return the data
+               data = out.str();
+               return true;
+
+            case table::fetch_code::ISOLATED:   // go to the next row
+               ++cursor.it;
+            break;
+
+            default:                            // error, no more data
+               return false;
+            }
+      }
 }
 
 } // namespace cell

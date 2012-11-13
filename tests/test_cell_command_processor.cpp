@@ -90,20 +90,18 @@ TEST(CellCmdProcessorTest, CanExecuteInsert)
    auto resp = cp.process(request);
    auto txn_id = resp.prepare().transaction_id();
    auto tbl_id = cp.get_database().get_table_id("test_table_1");
-   auto t      = cp.get_database().get_table(tbl_id);
+   auto t = cp.get_database().get_table(tbl_id);
 
    table::text_tuple_type text_data
       {
       "123", "1234567890"
       };
 
-   uint8_t buffer[64];
-
+   std::string buffer;
    t->to_binary(
       {
       true, true
-      }, text_data, buffer, sizeof(buffer));
-
+      }, text_data, buffer);
 
    // Create insert message
    CommandRequest request2;
@@ -114,9 +112,7 @@ TEST(CellCmdProcessorTest, CanExecuteInsert)
    msg2->set_transaction_id(txn_id);
    msg2->set_table_id(tbl_id);
    msg2->set_column_mask(0x3);
-   msg2->add_data(std::string(
-         static_cast<const char*>(static_cast<void*>(buffer)),
-         sizeof(buffer)));
+   msg2->add_data(buffer);
 
    // Perform insert.
    auto resp2 = cp.process(request2);
@@ -125,5 +121,71 @@ TEST(CellCmdProcessorTest, CanExecuteInsert)
    ASSERT_TRUE(resp2.has_insert());
    ASSERT_EQ(txn_id, resp2.insert().transaction_id());
    ASSERT_EQ(1, resp2.insert().row_count());
+
+}
+
+TEST(CellCmdProcessorTest, CanExecuteFetch)
+{
+   using namespace lattice::cell;
+
+   command_processor cp;
+
+   cp.create_table("test_table_1",
+      {
+      new lattice::cell::column
+         {
+         lattice::cell::column::data_type::integer, "id", 4
+         }, new lattice::cell::column
+         {
+         lattice::cell::column::data_type::bigint, "c1", 8
+         },
+      });
+
+   CommandRequest request;
+
+   request.set_kind(CommandRequest::PREPARE);
+
+   auto* msg = request.mutable_prepare();
+   msg->set_create_transaction(true);
+
+   // Prepare for insert
+   auto resp = cp.process(request);
+   auto txn_id = resp.prepare().transaction_id();
+   auto tbl_id = cp.get_database().get_table_id("test_table_1");
+   auto t = cp.get_database().get_table(tbl_id);
+
+   table::text_tuple_type text_data
+      {
+      "123", "1234567890"
+      };
+
+   std::string buffer;
+
+   t->to_binary(
+      {
+      true, true
+      }, text_data, buffer);
+
+   // Create insert message
+   CommandRequest request2;
+
+   request2.set_kind(CommandRequest::INSERT);
+   auto* msg2 = request2.mutable_insert();
+
+   msg2->set_transaction_id(txn_id);
+   msg2->set_table_id(tbl_id);
+   msg2->set_column_mask(0x3);
+   msg2->add_data(buffer);
+
+   // Perform insert.
+   auto resp2 = cp.process(request2);
+
+   // Create fetch
+   CommandRequest request3;
+
+   request3.set_kind(CommandRequest::FETCH);
+
+   auto* msg3 = request3.mutable_fetch();
+
 }
 

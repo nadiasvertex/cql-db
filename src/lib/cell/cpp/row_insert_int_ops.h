@@ -7,7 +7,7 @@
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof(std::int16_t))
               {
-               return false;
+               return insert_code::OUT_OF_MEMORY;
               }
             offset += bytes_written;
           }
@@ -21,7 +21,7 @@
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof(std::int32_t))
               {
-               return false;
+               return insert_code::OUT_OF_MEMORY;
               }
             offset += bytes_written;
           }
@@ -35,7 +35,7 @@
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof(std::int64_t))
               {
-               return false;
+               return insert_code::OUT_OF_MEMORY;
               }
             offset += bytes_written;
           }
@@ -49,7 +49,7 @@
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof(float))
               {
-               return false;
+               return insert_code::OUT_OF_MEMORY;
               }
             offset += bytes_written;
           }
@@ -63,7 +63,7 @@
             auto bytes_written = p->insert_object(oid, *data);
             if (bytes_written == 0 || bytes_written!=sizeof(double))
               {
-               return false;
+               return insert_code::OUT_OF_MEMORY;
               }
             offset += bytes_written;
           }

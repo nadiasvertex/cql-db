@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <cell/cpp/transaction_id.h>
 #include <cell/cpp/table.h>
 
 namespace lattice {
@@ -11,20 +12,20 @@ namespace cell {
 
 class transaction
 {
-   typedef std::unordered_set<page::object_id_type> row_id_list_type;
+   typedef std::unordered_set<row_id, row_id_hash> row_id_list_type;
 
    typedef struct
    {
       /** Reference to the table adjusted. */
       table_handle_type t;
 
-      /** List of rows added during this transaction. */
-      table::row_list_type added;
+      /** Set of row ids added. */
+      row_id_list_type added;
 
-      /** List of rows updated during this transaction. */
-      table::row_list_type updated;
+      /** Set of row ids updated. */
+      row_id_list_type updated;
 
-      /** List of rows deleted during this transaction. */
+      /** Set of row ids deleted during this transaction. */
       row_id_list_type deleted;
 
    } version_type;
@@ -48,12 +49,21 @@ class transaction
    /** Tracks cursor identifiers. */
    page::object_id_type next_cursor_id;
 
+   /** The transaction id for this transaction. */
+   transaction_id id;
+
 public:
    transaction() :
          next_cursor_id(0)
    {
    }
    ;
+
+   /**
+    * Creates a new version object for the table. This lets us isolate
+    * changes from the main row store.
+    */
+   void create_version(table_handle_type t);
 
    /**
     * Creates a new cursor object attached to this transaction.
@@ -93,6 +103,12 @@ public:
     * Moves modifications into the table store.
     */
    bool commit();
+
+   /**
+    * Fetch columns from a table, respecting transactional boundaries.
+    */
+   bool fetch_columns(cursor_type &cursor, std::string& data,
+         const std::vector<bool>& present);
 };
 
 } // namespace cell

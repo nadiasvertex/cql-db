@@ -48,21 +48,18 @@ std::string command_processor::fetch_columns(page::object_id_type txn_id,
 
    // Get cursor
    auto& cursor = txn.get_cursor(cursor_id);
-   auto& row = cursor.it;
-   auto& t = cursor.t;
 
-   // Temporary buffer for writing out data.
-   std::stringstream out;
+   std::string data;
    std::vector<bool> present;
 
-   present.assign(t->get_number_of_columns(), false);
+   present.assign(cursor.t->get_number_of_columns(), false);
    for (auto index : column_indexes)
       {
          present[index] = true;
       }
 
-   t->fetch_row(row, present, out);
-   return out.str();
+   txn.fetch_columns(cursor, data, present);
+   return data;
 }
 
 bool command_processor::insert_columns(page::object_id_type txn_id,
@@ -87,6 +84,8 @@ bool command_processor::insert_columns(page::object_id_type txn_id,
       }
 
    txn.insert_columns(t, data, present);
+
+   return true;
 }
 
 //                                                                           //
