@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include <cell/cpp/transaction_id.h>
+#include <cell/cpp/isolation_level.h>
 #include <cell/cpp/table.h>
 
 namespace lattice {
@@ -49,15 +50,28 @@ class transaction
    /** Tracks cursor identifiers. */
    page::object_id_type next_cursor_id;
 
+   /** Isolation level for this transaction. */
+   isolation_level il;
+
    /** The transaction id for this transaction. */
    transaction_id id;
 
 public:
    transaction() :
-         next_cursor_id(0)
+         next_cursor_id(0), il(isolation_level::READ_COMMITTED)
    {
    }
    ;
+
+   /**
+    * Set the isolation level for the transaction.
+    *
+    * @param level: The new isolation level.
+    */
+   void set_isolation_level(isolation_level level)
+   {
+      il = level;
+   }
 
    /**
     * Creates a new version object for the table. This lets us isolate

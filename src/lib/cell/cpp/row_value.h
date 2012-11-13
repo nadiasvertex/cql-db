@@ -228,6 +228,6 @@ public:
 };
 
 } // namespace cell
-         } // namespace lattice
+} // namespace lattice
 
 #endif // __LATTICE_CELL_ROW_VALUE_H__

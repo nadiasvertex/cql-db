@@ -10,6 +10,7 @@
 #include <cell/cpp/unstringify.h>
 #include <cell/cpp/row_id.h>
 #include <cell/cpp/row_value.h>
+#include <cell/cpp/isolation_level.h>
 #include <cell/cpp/page.h>
 
 namespace lattice {
@@ -114,8 +115,7 @@ private:
 public:
 
    table(page::object_id_type _table_id, unsigned int _number_of_columns) :
-            table_id(_table_id),
-            number_of_columns(_number_of_columns)
+         table_id(_table_id), number_of_columns(_number_of_columns)
    {
       for (auto i = 0; i < number_of_columns; ++i)
          {
@@ -268,7 +268,8 @@ public:
     * @param buffer: The data buffer to write data into.
     */
    fetch_code fetch_row(const transaction_id& tid, row_list_type::iterator& pos,
-         const column_present_type& present, std::ostream& buffer);
+         const column_present_type& present, std::ostream& buffer,
+         isolation_level level = isolation_level::READ_COMMITTED);
 
    /**
     * Fetch a row from the table.
@@ -285,7 +286,8 @@ public:
     * @param buffer: The buffer to write data into.
     */
    fetch_code fetch_row(const transaction_id& tid, const row_id& rid,
-         const column_present_type& present, std::ostream& buffer);
+         const column_present_type& present, std::ostream& buffer,
+         isolation_level level = isolation_level::READ_COMMITTED);
 
    /**
     * Converts a text tuple into a binary format.
@@ -301,8 +303,8 @@ public:
     *
     * @param buffer: The data buffer to write data into.
     */
-   bool to_binary(const column_present_type& present, const text_tuple_type& tuple,
-         std::string& buffer);
+   bool to_binary(const column_present_type& present,
+         const text_tuple_type& tuple, std::string& buffer);
 
 };
 

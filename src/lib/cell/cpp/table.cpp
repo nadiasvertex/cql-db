@@ -69,13 +69,13 @@ bool table::commit_row(const transaction_id& tid, const row_id& rid)
 
 table::fetch_code table::fetch_row(const transaction_id& tid,
       row_list_type::iterator& pos, const column_present_type& present,
-      std::ostream& buffer)
+      std::ostream& buffer, isolation_level level)
 {
    // Get a reference to the row.
    auto& row = pos->second;
 
    // Check to see if the row is visible to this transaction.
-   if (!row.is_visible(tid))
+   if (level == isolation_level::READ_COMMITTED && !row.is_visible(tid))
       {
          return fetch_code::ISOLATED;
       }
@@ -113,7 +113,8 @@ table::fetch_code table::fetch_row(const transaction_id& tid,
 }
 
 table::fetch_code table::fetch_row(const transaction_id& tid, const row_id& rid,
-      const column_present_type& present, std::ostream& buffer)
+      const column_present_type& present, std::ostream& buffer,
+      isolation_level level)
 {
    // See if the row exists.
    auto pos = rows.find(rid);
@@ -122,7 +123,7 @@ table::fetch_code table::fetch_row(const transaction_id& tid, const row_id& rid,
          return fetch_code::DOES_NOT_EXIST;
       }
 
-   return fetch_row(tid, pos, present, buffer);
+   return fetch_row(tid, pos, present, buffer, level);
 }
 
 bool table::to_binary(const column_present_type& present,

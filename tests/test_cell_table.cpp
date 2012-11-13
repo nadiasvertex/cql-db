@@ -222,7 +222,8 @@ TEST(TableTest, CanFetchManyRows)
 
          std::stringstream out_buffer;
 
-         ASSERT_EQ(table::fetch_code::SUCCESS, t.fetch_row(tid, rid, { true }, out_buffer));
+         ASSERT_EQ(table::fetch_code::SUCCESS,
+               t.fetch_row(tid, rid, { true }, out_buffer));
          EXPECT_EQ(in_buffer, out_buffer.str());
 
       }
@@ -270,13 +271,63 @@ TEST(TableTest, CanIsolateInsert)
          std::stringstream out_buffer;
 
          // Row has not been committed yet, so it shouldn't be visible.
-         ASSERT_EQ(table::fetch_code::ISOLATED, t.fetch_row(read_tid, rid, { true }, out_buffer));
+         ASSERT_EQ(table::fetch_code::ISOLATED,
+               t.fetch_row(read_tid, rid, { true }, out_buffer));
 
          // Commit row
          t.commit_row(write_tid, rid);
 
          // Row has been committed, so it should be visible.
-         ASSERT_EQ(table::fetch_code::SUCCESS, t.fetch_row(read_tid, rid, { true }, out_buffer));
+         ASSERT_EQ(table::fetch_code::SUCCESS,
+               t.fetch_row(read_tid, rid, { true }, out_buffer));
          EXPECT_EQ(in_buffer, out_buffer.str());
+      }
+}
+
+TEST(TableTest, CanDisableIsolation)
+{
+   using namespace lattice::cell;
+
+   table t
+      {
+      0, 1
+      };
+
+   auto *c1 = new column
+      {
+      column::data_type::integer, "col1"
+      };
+
+   t.set_column_definition(0, c1);
+
+   transaction_id tid_generator;
+   transaction_id write_tid = tid_generator.next();
+   transaction_id read_tid = tid_generator.next();
+
+   for (auto i = 0; i < 10000; ++i)
+      {
+         row_id rid;
+         table::text_tuple_type text_data
+            {
+            std::to_string(i)
+            };
+
+         std::string in_buffer;
+         t.to_binary(
+            {
+            true
+            }, text_data, in_buffer);
+
+         t.insert_row(write_tid, rid,
+            {
+            true
+            }, in_buffer);
+
+         std::stringstream out_buffer;
+
+         // Row has not been committed yet, but it should be visible.
+         ASSERT_EQ(table::fetch_code::SUCCESS,
+               t.fetch_row(read_tid, rid, { true }, out_buffer,
+                           isolation_level::READ_UNCOMMITTED));
       }
 }

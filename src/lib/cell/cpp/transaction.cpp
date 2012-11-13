@@ -75,7 +75,7 @@ bool transaction::fetch_columns(cursor_type &cursor, std::string& data,
 
          std::stringstream out;
 
-         switch (cursor.t->fetch_row(id, cursor.it, present, out))
+         switch (cursor.t->fetch_row(id, cursor.it, present, out, il))
             {
             case table::fetch_code::SUCCESS:    // return the data
                data = out.str();
