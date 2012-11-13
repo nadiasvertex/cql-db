@@ -2,6 +2,7 @@
 #define __LATTICE_CELL_ROW_VALUE_H__
 
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include <cell/cpp/transaction_id.h>
@@ -129,9 +130,11 @@ public:
     */
    bool is_visible(const transaction_id& txn_id) const
    {
+      using namespace std::rel_ops;
+
       if (committed)
          {
-            return transaction_write_id < txn_id;
+            return transaction_write_id <= txn_id;
          }
 
       return transaction_lock_id == txn_id;
