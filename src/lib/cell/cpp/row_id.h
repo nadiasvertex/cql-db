@@ -9,35 +9,53 @@ namespace cell {
 
 class row_id
 {
-	std::uint64_t id;
+   std::uint64_t id;
 
-   row_id(std::uint64_t _id):id(_id) {};
+   row_id(std::uint64_t _id) :
+         id(_id)
+   {
+   }
+   ;
 
    friend class row_id_hash;
 
- public:
+public:
 
-   row_id():id(0) {};
+   row_id() :
+         id(0)
+   {
+   }
+   ;
 
-	static row_id from_uint64(std::uint64_t value)
-	{
-		return row_id(value);
-	}
+   static row_id from_uint64(std::uint64_t value)
+   {
+      return row_id(value);
+   }
 
    row_id next()
-	{
-		return row_id(++id);
-	}
+   {
+      return row_id(++id);
+   }
 
-	bool operator==(const row_id& o) const
-	{
-		return id == o.id;
-	}
+   bool operator==(const row_id& o) const
+   {
+      return id == o.id;
+   }
 
-	bool operator<(const row_id& o) const
-	{
-		return id < o.id;
-	}
+   bool operator<(const row_id& o) const
+   {
+      return id < o.id;
+   }
+
+   row_id operator+(int i)
+   {
+      return row_id(id + i);
+   }
+
+   row_id operator-(int i)
+   {
+      return row_id(id - i);
+   }
 };
 
 class row_id_hash
@@ -49,7 +67,6 @@ public:
       return h(rid.id);
    }
 };
-
 
 } // namespace cell
 } // namespace lattice

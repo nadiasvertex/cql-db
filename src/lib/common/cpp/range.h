@@ -11,6 +11,9 @@ namespace common {
 /**
  * Implements a set of one dimensional segments. The class provides the
  * ability to test for coverage, and to add a point to the segment set.
+ *
+ * The type implemented for the range boundary must implement operator+(T,int),
+ * operator-(T,int), operator<(T,T), and operator==(T,T).
  */
 template<typename T>
 class range
@@ -57,6 +60,8 @@ public:
    /**
     * Insert a new point into the range. This may cause the creation
     * of a new segment.
+    *
+    * @param point: The item to insert.
     *
     */
    iterator insert(const T& point)
