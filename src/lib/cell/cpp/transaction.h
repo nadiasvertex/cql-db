@@ -23,10 +23,8 @@ class transaction
       /** Set of row ids added. */
       row_id_list_type added;
 
-      /** Set of row ids updated. */
-      row_id_list_type updated;
-
-      /** Set of row ids deleted during this transaction. */
+      /** Set of row ids deleted during this transaction. This set also
+       * includes row ids implicitly deleted by updating them. */
       row_id_list_type deleted;
 
    } version_type;
@@ -126,7 +124,7 @@ public:
    /**
     * Update columns in a table.
     */
-   bool update_columns(cursor_type &cursor, std::string& data,
+   bool update_columns(cursor_type &cursor, const std::string& data,
          const std::vector<bool>& present);
 };
 

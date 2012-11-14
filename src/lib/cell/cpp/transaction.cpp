@@ -52,6 +52,7 @@ bool transaction::commit()
    for (auto& version : versions)
       {
          auto t = version.second.t;
+
          // Process all inserts.
          for (auto& row : version.second.added)
             {
@@ -91,10 +92,43 @@ bool transaction::fetch_columns(cursor_type &cursor, std::string& data,
       }
 }
 
-bool transaction::update_columns(cursor_type &cursor, std::string& data,
+bool transaction::update_columns(cursor_type &cursor, const std::string& data,
       const std::vector<bool>& present)
 {
+   auto tbl_id = cursor.t->get_table_id();
+   auto pos = versions.find(tbl_id);
+   if (pos == versions.end())
+      {
+         create_version(cursor.t);
+         pos = versions.find(tbl_id);
+      }
 
+   auto& version = pos->second;
+
+   while (true)
+      {
+         // If the cursor is at the end, don't try to update.
+         if (cursor.it == cursor.t->end())
+            {
+               return false;
+            }
+
+         row_id new_rid;
+         switch (cursor.t->update_row(id, cursor.it, present, data, new_rid, il))
+            {
+            case table::update_code::SUCCESS:    // update the records
+               version.deleted.insert(cursor.it->first);
+               version.added.insert(new_rid);
+               return true;
+
+            case table::update_code::ISOLATED:   // go to the next row
+               ++cursor.it;
+            break;
+
+            default:                            // error, unable to update
+               return false;
+            }
+      }
 }
 
 } // namespace cell

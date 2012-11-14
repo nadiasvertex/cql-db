@@ -5,6 +5,30 @@
 namespace lattice {
 namespace cell {
 
+static inline bool row_is_visible(const transaction_id& tid,
+      const table::row_type& row, isolation_level level)
+{
+   // Check to see if the row is visible to this transaction.
+   switch (level)
+      {
+      case isolation_level::READ_COMMITTED:
+         if (!row.is_visible(tid))
+            {
+               return false;
+            }
+      break;
+
+      case isolation_level::REPEATABLE_READ:
+         if (!row.is_snapshot_visible(tid))
+            {
+               return false;
+            }
+      break;
+      }
+
+   return true;
+}
+
 table::insert_code table::insert_row(const transaction_id& tid, row_id& rid,
       const column_present_type& present, const std::string& data)
 {
@@ -74,22 +98,9 @@ table::fetch_code table::fetch_row(const transaction_id& tid,
    // Get a reference to the row.
    auto& row = pos->second;
 
-   // Check to see if the row is visible to this transaction.
-   switch (level)
+   if (!row_is_visible(tid, row, level))
       {
-      case isolation_level::READ_COMMITTED:
-         if (!row.is_visible(tid))
-            {
-               return fetch_code::ISOLATED;
-            }
-      break;
-
-      case isolation_level::SNAPSHOT:
-         if (!row.is_snapshot_visible(tid))
-            {
-               return fetch_code::ISOLATED;
-            }
-      break;
+         return fetch_code::ISOLATED;
       }
 
    // Read columns from the row as requested.
@@ -140,27 +151,24 @@ table::fetch_code table::fetch_row(const transaction_id& tid, const row_id& rid,
 
 table::update_code table::update_row(const transaction_id& tid,
       row_list_type::iterator& pos, const column_present_type& present,
-      const std::string& buffer, isolation_level level)
+      const std::string& buffer, row_id& new_rid, isolation_level level)
 {
    // Get a reference to the row.
    auto& old_row = pos->second;
 
-   // Check to see if the row is visible to this transaction. This may
-   // happen if a row meets the predicate, but isn't actually visible
-   // to the transaction where the update is happening.
-   if (level == isolation_level::READ_COMMITTED && !old_row.is_visible(tid))
+   if (!row_is_visible(tid, old_row, level))
       {
          return update_code::ISOLATED;
       }
 
-   // If someone is already updating the row, abort.
-   if (old_row.is_locked(tid))
+   // If someone is already updating the row, abort. Otherwise lock it
+   // ourselves.
+   if (!old_row.lock(tid))
       {
          return update_code::CONFLICT;
       }
 
    row_id rid;
-
    switch (insert_row(tid, rid, present, buffer))
       {
       default:
@@ -186,11 +194,16 @@ table::update_code table::update_row(const transaction_id& tid,
    // Update it so that it has copies of all the
    // unchanged data.
    new_row.update(tid, present, old_row);
+
+   // Delete the old row.
+   old_row.remove(tid);
+
+   return update_code::SUCCESS;
 }
 
 table::update_code table::update_row(const transaction_id& tid,
       const row_id& rid, const column_present_type& present,
-      const std::string& buffer, isolation_level level)
+      const std::string& buffer, row_id& new_rid, isolation_level level)
 {
    // See if the row exists.
    auto pos = rows.find(rid);
@@ -199,7 +212,7 @@ table::update_code table::update_row(const transaction_id& tid,
          return update_code::DOES_NOT_EXIST;
       }
 
-   return update_row(tid, pos, present, buffer, level);
+   return update_row(tid, pos, present, buffer, new_rid, level);
 
 }
 

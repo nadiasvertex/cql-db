@@ -78,8 +78,8 @@ public:
       CORRUPT_PAGE,     // The page containing the column recorded a data
                         // offset that was not valid.
 
-      UNKNOWN_DATA_TYPE,// The storage engine does not know how to store the
-                        // data specified in one or more columns.
+      UNKNOWN_DATA_TYPE,    // The storage engine does not know how to store the
+                            // data specified in one or more columns.
 
       UNEXPECTED_INSERT_ERROR, // The insert issued an error that was not
                                // expected.
@@ -331,7 +331,7 @@ public:
     */
    update_code update_row(const transaction_id& tid,
          row_list_type::iterator& pos, const column_present_type& present,
-         const std::string& buffer, isolation_level level =
+         const std::string& buffer, row_id& new_rid, isolation_level level =
                isolation_level::READ_COMMITTED);
 
    /**
@@ -350,7 +350,8 @@ public:
     */
    update_code update_row(const transaction_id& tid, const row_id& rid,
          const column_present_type& present, const std::string& buffer,
-         isolation_level level = isolation_level::READ_COMMITTED);
+         row_id& new_rid, isolation_level level =
+               isolation_level::READ_COMMITTED);
 
    /**
     * Converts a text tuple into a binary format.
