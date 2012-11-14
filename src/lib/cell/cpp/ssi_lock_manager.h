@@ -27,6 +27,8 @@ class ssi_lock_manager
 
    typedef std::map<transaction_id, dependency_set_type> dependency_map_type;
 
+   typedef std::size_t size_type;
+
    /**
     * Holds the range locks so that we can determine when
     * a read-after-write conflict has occurred.
@@ -93,7 +95,75 @@ class ssi_lock_manager
 
       return transaction_id();
    }
+
+   /**
+    * When 'tid' is committed or rolled back, we need to delete the mapping
+    * structures used for the read locks. We also collect the dependency
+    * mappings.
+    *
+    * @param tid: The transaction being collected.
+    * @param abort: If true, the collection will be processed as an
+    *               abort, meaning that all writer information is
+    *               removed (since an abort means that updates never
+    *               actually happened.)
+    */
+   void collect(const transaction_id& tid, bool abort = false)
+   {
+      // Tear down the read range locks.
+      for (auto pos = range_map.begin(); pos != range_map.end(); ++pos)
+         {
+            pos->second.erase(tid);
+         }
+
+      // Store the tid of writers that no longer have reader
+      // dependencies (because they have all committed or aborted.)
+      std::vector<transaction_id> empty_writers;
+
+      // Remove all references to this transaction as a reader (since
+      // we no longer care what it has read), but leave all references
+      // to it as a writer (since other readers may still care.)
+      for (auto pos = dep_map.begin(); pos != dep_map.end(); ++pos)
+         {
+            // Don't remove our write mapping (yet)
+            if (pos->first == tid)
+               {
+                  continue;
+               }
+
+            pos->second.erase(tid);
+
+            // If the writer at pos->first has no more reader dependencies
+            // then it is safe to remove the mapping.
+            if (pos->second.empty())
+               {
+                  empty_writers.push_back(pos->first);
+               }
+         }
+
+      // Remove any write mappings that are empty of readers.
+      for (auto& writer_tid : empty_writers)
+         {
+            dep_map.erase(writer_tid);
+         }
+
+      // Remove the write mappings for this transaction since
+      // we are aborting.
+      if (abort)
+         {
+            dep_map.erase(tid);
+         }
+   }
 public:
+   /**
+    * Provides the number of writer nodes that have outstanding reader
+    * dependencies. Note that some of these writers may have committed
+    *  already.
+    */
+   size_type writer_graph_size()
+   {
+      return dep_map.size();
+   }
+
    /**
     * Tracks a read to a particular row in a particular table for some transaction.
     *
@@ -214,50 +284,27 @@ public:
    }
 
    /**
-    * When 'tid' is committed or rolled back, we need to delete the mapping
-    * structures used for the read locks. We don't remove writer dependency
-    * information until all of its reader dependencies have been collected.
+    * When 'tid' is rolled back, we need to delete the mapping
+    * structures used for the read locks. We also remove the write
+    * mappings, because all writes done by the transaction are undone.
+    *
+    * @param tid: The transaction being aborted.
+    */
+   void abort(const transaction_id& tid)
+   {
+      collect(tid, true);
+   }
+
+   /**
+    * When 'tid' is committed, we need to delete the mapping structures
+    * used for the read locks. We don't remove writer dependency information
+    * until all of its reader dependencies have been collected.
     *
     * @param tid: The transaction being collected.
     */
-   void collect(const transaction_id& tid)
+   void commit(const transaction_id& tid)
    {
-      // Tear down the read range locks.
-      for (auto pos = range_map.begin(); pos != range_map.end(); ++pos)
-         {
-            pos->second.erase(tid);
-         }
-
-      // Store the tid of writers that no longer have reader
-      // dependencies (because they have all committed or aborted.)
-      std::vector<transaction_id> empty_writers;
-
-      // Remove all references to this transaction as a reader (since
-      // we no longer care what it has read), but leave all references
-      // to it as a writer (since other readers may still care.)
-      for (auto pos = dep_map.begin(); pos != dep_map.end(); ++pos)
-         {
-            // Don't remove our write mapping (yet)
-            if (pos->first == tid)
-               {
-                  continue;
-               }
-
-            pos->second.erase(tid);
-
-            // If the writer at pos->first has no more reader dependencies
-            // then it is safe to remove the mapping.
-            if (pos->second.empty())
-               {
-                  empty_writers.push_back(pos->first);
-               }
-         }
-
-      // Remove any write mappings that are empty of readers.
-      for (auto& writer_tid : empty_writers)
-         {
-            dep_map.erase(writer_tid);
-         }
+      collect(tid, false);
    }
 
 }
