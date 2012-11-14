@@ -146,6 +146,8 @@ public:
             return false;
          }
 
+      bool result = false;
+
       // Walk the transactions
       auto& txn_map = table_pos->second;
       for (auto &txn : txn_map)
@@ -161,11 +163,13 @@ public:
             if (txn.second.contains(rid))
                {
                   add_rw_dependency(txn.first, tid);
-                  return true;
+                  result = true;
+                  continue; // evaluate all transactions so that we find
+                            // all dependencies.
                }
          }
 
-      return false;
+      return result;
    }
 
    /**
@@ -207,6 +211,53 @@ public:
 
       // No conflicts found
       return std::make_tuple(transaction_id(), false);
+   }
+
+   /**
+    * When 'tid' is committed or rolled back, we need to delete the mapping
+    * structures used for the read locks. We don't remove writer dependency
+    * information until all of its reader dependencies have been collected.
+    *
+    * @param tid: The transaction being collected.
+    */
+   void collect(const transaction_id& tid)
+   {
+      // Tear down the read range locks.
+      for (auto pos = range_map.begin(); pos != range_map.end(); ++pos)
+         {
+            pos->second.erase(tid);
+         }
+
+      // Store the tid of writers that no longer have reader
+      // dependencies (because they have all committed or aborted.)
+      std::vector<transaction_id> empty_writers;
+
+      // Remove all references to this transaction as a reader (since
+      // we no longer care what it has read), but leave all references
+      // to it as a writer (since other readers may still care.)
+      for (auto pos = dep_map.begin(); pos != dep_map.end(); ++pos)
+         {
+            // Don't remove our write mapping (yet)
+            if (pos->first == tid)
+               {
+                  continue;
+               }
+
+            pos->second.erase(tid);
+
+            // If the writer at pos->first has no more reader dependencies
+            // then it is safe to remove the mapping.
+            if (pos->second.empty())
+               {
+                  empty_writers.push_back(pos->first);
+               }
+         }
+
+      // Remove any write mappings that are empty of readers.
+      for (auto& writer_tid : empty_writers)
+         {
+            dep_map.erase(writer_tid);
+         }
    }
 
 }
