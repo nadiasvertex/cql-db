@@ -11,6 +11,7 @@
 #include <cell/cpp/row_id.h>
 #include <cell/cpp/row_value.h>
 #include <cell/cpp/isolation_level.h>
+#include <cell/cpp/ssi_lock_manager.h>
 #include <cell/cpp/page.h>
 
 namespace lattice {
@@ -110,6 +111,11 @@ public:
 
 private:
    /**
+    * A pointer to the lock manager for serializable transactions.
+    */
+   ssi_lock_manager *ssi_lm;
+
+   /**
     * The list of rows assigned to the table.
     */
    row_list_type rows;
@@ -142,7 +148,8 @@ private:
 public:
 
    table(page::object_id_type _table_id, unsigned int _number_of_columns) :
-         table_id(_table_id), number_of_columns(_number_of_columns)
+         table_id(_table_id), number_of_columns(_number_of_columns),
+         ssi_lm(nullptr)
    {
       for (auto i = 0; i < number_of_columns; ++i)
          {
@@ -191,6 +198,18 @@ public:
    row_id get_next_row_id()
    {
       return row_id_generator.next();
+   }
+
+   /**
+    * Sets the serializable snapshot isolation lock manager for this
+    * table.
+    *
+    * @param lm: The lock manager. This table does not own the pointer
+    *            and will never delete it.
+    */
+   void set_ssi_lock_manager(ssi_lock_manager *lm)
+   {
+      ssi_lm = lm;
    }
 
    /**

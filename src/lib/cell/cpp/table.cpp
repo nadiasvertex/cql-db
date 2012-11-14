@@ -132,6 +132,11 @@ table::fetch_code table::fetch_row(const transaction_id& tid,
          dv.copy(*std::get<1>(seek), buffer);
       }
 
+   if (level==isolation_level::SERIALIZABLE && ssi_lm!=nullptr)
+      {
+         ssi_lm->track_read(tid, table_id, pos->first);
+      }
+
    return fetch_code::SUCCESS;
 }
 
@@ -197,6 +202,12 @@ table::update_code table::update_row(const transaction_id& tid,
 
    // Delete the old row.
    old_row.remove(tid);
+
+   // Track a write on the old row, in case anyone has read it.
+   if (level==isolation_level::SERIALIZABLE && ssi_lm!=nullptr)
+         {
+            ssi_lm->track_write(tid, table_id, pos->first);
+         }
 
    return update_code::SUCCESS;
 }

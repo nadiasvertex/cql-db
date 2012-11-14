@@ -8,7 +8,8 @@ enum class isolation_level
 {
    READ_UNCOMMITTED,
    READ_COMMITTED,
-   REPEATABLE_READ
+   REPEATABLE_READ,
+   SERIALIZABLE
 };
 
 } // namespace cell
