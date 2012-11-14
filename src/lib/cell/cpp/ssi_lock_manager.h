@@ -3,6 +3,7 @@
 
 #include <map>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -39,19 +40,58 @@ class ssi_lock_manager
    dependency_map_type dep_map;
 
    /**
-    * Creates an rw-antidependency mapping between the writer (T2) and the reader
-    * (T1).
+    * Creates an rw-antidependency mapping between the writer (T2) and the
+    * reader (T1).
+    *
+    * @param writer: The transaction that wrote the row.
+    * @param reader: The transaction that previously read the row.
     */
-   void add_rw_dependency(const transaction_id& writer, const transaction_id& reader)
+   void add_rw_dependency(const transaction_id& writer,
+         const transaction_id& reader)
    {
-      auto pos = dep_map.find(reader);
-      if (pos==dep_map.end())
+      auto pos = dep_map.find(writer);
+      if (pos == dep_map.end())
          {
-            pos = dep_map.insert(std::make_pair(reader, dependency_set_type())).first;
+            pos =
+                  dep_map.insert(std::make_pair(writer, dependency_set_type())).first;
          }
 
       auto& dep_set = pos->second;
-      dep_set.insert(writer);
+      dep_set.insert(reader);
+   }
+
+   /**
+    * Checks to see if an rw-antidependency mapping between tid (T2)
+    * and some other transaction (T1). If there is a mapping T1 -rw-> T2
+    * then this function will return T1.
+    *
+    * @param tid: The transaction id of a writer checking to see if
+    *             a reader has an rw-antidependency relationship.
+    *
+    * @returns: The transaction id of the reader (T1), or an empty
+    *           transaction id.
+    */
+   transaction_id get_rw_dependency(const transaction_id& tid)
+   {
+      for (auto pos = dep_map.begin(); pos != dep_map.end(); ++pos)
+         {
+            // Don't bother checking if we are looking in our
+            // own bucket.
+            if (pos->first == tid)
+               {
+                  continue;
+               }
+
+            auto& s = pos->second;
+            if (s.find(tid) != s.end())
+               {
+                  // The transaction at pos->first has an rw dependency on
+                  // tid.
+                  return pos->first;
+               }
+         }
+
+      return transaction_id();
    }
 public:
    /**
@@ -108,8 +148,9 @@ public:
 
       // Walk the transactions
       auto& txn_map = table_pos->second;
-      for(auto &txn : txn_map)
+      for (auto &txn : txn_map)
          {
+            // Ignore writes after reads in the same transaction.
             if (tid == txn.first)
                {
                   continue;
@@ -126,7 +167,50 @@ public:
 
       return false;
    }
-};
+
+   /**
+    * Checks to see if there are any dangerous structures prior to
+    * the commit of 'tid'.
+    *
+    * @param tid: The transaction id of the transaction that is
+    *             committing.
+    *
+    * @returns: A tuple of (abort_txn_id, conflicts_detected). If the
+    *           conflicts_detected member is 'true', then abort_txn_id will
+    *           contain the id of the transaction that must be aborted.
+    *
+    * @note: Serializability theory holds that if:
+    *
+    *                T1 -rw-> T2 -rw-> T3
+    *
+    *        AND if T3 is the first to commit, then this is a dangerous
+    *        structure and may be involved in a serialization cycle. Ideally
+    *        T2 would be aborted, T3 would commit, and T1 would get left
+    *        alone.
+    */
+   std::tuple<transaction_id, bool> check_for_conflicts(
+         const transaction_id& tid)
+   {
+      auto t2 = get_rw_dependency(tid);
+      if (!t2.empty())
+         {
+            // The transaction at pos->first (T2) has an rw dependency on
+            // tid (T3). Now check to see if T2 is an rw dependency of
+            // some other transaction (T1).
+            auto t1 = get_rw_dependency(t2);
+            if (!t1.empty())
+               {
+                  // A dangerous structure has been located.
+                  return std::make_tuple(t2, true);
+               }
+         }
+
+      // No conflicts found
+      return std::make_tuple(transaction_id(), false);
+   }
+
+}
+;
 
 } // end namespace cell
 } // end namespace lattice
