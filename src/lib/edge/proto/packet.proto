@@ -9,9 +9,8 @@ message Packet {
 	enum PayloadType {
 	     NONE  = 0;
 	     PING  = 1;
-	     LOAD  = 2;
-         STORE = 3;
-	     DDL   = 4;
+	     CMD   = 2;
+	     STOP  = 3;
 	}
 	optional PayloadType type    = 3 [default=NONE];
 	optional bytes       payload = 4;

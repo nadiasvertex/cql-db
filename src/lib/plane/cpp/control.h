@@ -87,7 +87,7 @@ public:
      *
      * @param packet: The packet to broadcast on the control plane.
      */
-    void send(lattice::edge::Packet packet)
+    void send(const lattice::edge::Packet& packet)
     {
         std::ostringstream out;
         packet.SerializeToOstream(&out);
