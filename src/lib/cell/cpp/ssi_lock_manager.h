@@ -1,10 +1,9 @@
 #ifndef __LATTICE_CELL_SSI_LOCK_MANAGER_H__
 #define __LATTICE_CELL_SSI_LOCK_MANAGER_H__
 
-#include <map>
-#include <set>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include <cell/cpp/row_id.h>
@@ -19,13 +18,15 @@ class ssi_lock_manager
 {
    typedef common::range<row_id> row_range_type;
 
-   typedef std::map<transaction_id, row_range_type> transaction_range_map_type;
+   typedef std::unordered_map<transaction_id, row_range_type,
+         transaction_id_hash> transaction_range_map_type;
 
    typedef std::unordered_map<page::object_id_type, transaction_range_map_type> table_transaction_map_type;
 
-   typedef std::set<transaction_id> dependency_set_type;
+   typedef std::unordered_set<transaction_id, transaction_id_hash> dependency_set_type;
 
-   typedef std::map<transaction_id, dependency_set_type> dependency_map_type;
+   typedef std::unordered_map<transaction_id, dependency_set_type,
+         transaction_id_hash> dependency_map_type;
 
    typedef std::size_t size_type;
 
@@ -42,24 +43,134 @@ class ssi_lock_manager
    dependency_map_type dep_map;
 
    /**
+    * Tracks concurrent transactions so that we know, for example T1 and T2
+    * ran at the same time. Once all transactions from some slice of time
+    * have committed or aborted we can tear down the read range maps.
+    */
+   dependency_map_type concurrent_transactions;
+
+   /** The set of transactions which are currently active. */
+   dependency_set_type active_transactions;
+
+   /**
+    * Adds a transaction to the list of concurrent transactions.
+    *
+    * @param tid: A new transaction to track.
+    *
+    * All current transactions are listed as concurrent to tid, and tid is
+    * added as concurrent to all active transactions.
+    */
+   void add_transaction(const transaction_id& tid)
+   {
+      dependency_set_type concurrent;
+
+      // If we already know about the transaction, don't add it again.
+      if (active_transactions.insert(tid).second == false)
+         {
+            return;
+         }
+
+      // Create a mapping between the currently active transactions
+      // and this new transaction.
+      for (const auto& active_tid : active_transactions)
+         {
+            if (tid == active_tid)
+               {
+                  continue;
+               }
+
+            concurrent.insert(active_tid);
+            concurrent_transactions.find(active_tid)->second.insert(tid);
+         }
+
+      concurrent_transactions.emplace(tid, std::move(concurrent));
+   }
+
+   /**
+    * Deletes a transaction from the list of concurrent transactions.
+    *
+    * @param tid: The old transaction to stop tracking.
+    *
+    * Finds the existing transaction, then walks the set of transactions
+    * that were concurrent. It removes itself as a dependency. If the
+    * dependency is empty, that indicates that we can tear down the
+    * read range records.
+    */
+   void del_transaction(const transaction_id& tid)
+   {
+      active_transactions.erase(tid);
+
+      // Easy out, just clear everything.
+      if (active_transactions.empty())
+         {
+            concurrent_transactions.clear();
+            for(auto& txn_map : range_map)
+               {
+                  txn_map.second.clear();
+               }
+
+            dep_map.clear();
+            return;
+         }
+
+      // Otherwise selectively clear out the system.
+      auto txn_deps = concurrent_transactions.find(tid);
+      if (txn_deps == concurrent_transactions.end())
+         {
+            return;
+         }
+
+      std::vector<transaction_id> empty;
+
+      for (auto& concurrent_tid : txn_deps->second)
+         {
+            auto pos = concurrent_transactions.find(concurrent_tid);
+            // If it wasn't found, then likely it has been committed
+            // or aborted and removed.
+            if (pos==concurrent_transactions.end())
+               {
+                  continue;
+               }
+
+            pos->second.erase(tid);
+
+            if (pos->second.empty())
+               {
+                  empty.push_back(pos->first);
+               }
+         }
+
+      for (auto& empty_tid : empty)
+         {
+            txn_deps->second.erase(empty_tid);
+            concurrent_transactions.erase(empty_tid);
+            // Tear down the read range locks.
+            for (auto& pos : range_map)
+               {
+                  pos.second.erase(empty_tid);
+               }
+         }
+   }
+
+   /**
     * Creates an rw-antidependency mapping between the writer (T2) and the
     * reader (T1).
     *
     * @param writer: The transaction that wrote the row.
     * @param reader: The transaction that previously read the row.
     */
-   void add_rw_dependency(const transaction_id& writer,
-         const transaction_id& reader)
+   void add_rw_dependency(const transaction_id& reader,
+         const transaction_id& writer)
    {
-      auto pos = dep_map.find(writer);
+      auto pos = dep_map.find(reader);
       if (pos == dep_map.end())
          {
             pos =
-                  dep_map.insert(std::make_pair(writer, dependency_set_type())).first;
+                  dep_map.insert(std::make_pair(reader, dependency_set_type())).first;
          }
 
       auto& dep_set = pos->second;
-      dep_set.insert(reader);
+      dep_set.insert(writer);
    }
 
    /**
@@ -109,49 +220,13 @@ class ssi_lock_manager
     */
    void collect(const transaction_id& tid, bool abort = false)
    {
-      // Tear down the read range locks.
-      for (auto pos = range_map.begin(); pos != range_map.end(); ++pos)
-         {
-            pos->second.erase(tid);
-         }
-
-      // Store the tid of writers that no longer have reader
-      // dependencies (because they have all committed or aborted.)
-      std::vector<transaction_id> empty_writers;
-
-      // Remove all references to this transaction as a reader (since
+      // Remove all dependencies to this transaction as a reader (since
       // we no longer care what it has read), but leave all references
       // to it as a writer (since other readers may still care.)
-      for (auto pos = dep_map.begin(); pos != dep_map.end(); ++pos)
-         {
-            // Don't remove our write mapping (yet)
-            if (pos->first == tid)
-               {
-                  continue;
-               }
+      dep_map.erase(tid);
 
-            pos->second.erase(tid);
-
-            // If the writer at pos->first has no more reader dependencies
-            // then it is safe to remove the mapping.
-            if (pos->second.empty())
-               {
-                  empty_writers.push_back(pos->first);
-               }
-         }
-
-      // Remove any write mappings that are empty of readers.
-      for (auto& writer_tid : empty_writers)
-         {
-            dep_map.erase(writer_tid);
-         }
-
-      // Remove the write mappings for this transaction since
-      // we are aborting.
-      if (abort)
-         {
-            dep_map.erase(tid);
-         }
+      // Remove from active transactions.
+      del_transaction(tid);
    }
 public:
    /**
@@ -174,6 +249,8 @@ public:
    void track_read(const transaction_id& tid, page::object_id_type table_id,
          const row_id& rid)
    {
+      add_transaction(tid);
+
       // Find the table
       auto table_pos = range_map.find(table_id);
       if (table_pos == range_map.end())
@@ -209,6 +286,8 @@ public:
    bool track_write(const transaction_id& tid, page::object_id_type table_id,
          const row_id& rid)
    {
+      add_transaction(tid);
+
       // Find the table.
       auto table_pos = range_map.find(table_id);
       if (table_pos == range_map.end())
@@ -268,14 +347,26 @@ public:
       auto t2 = get_rw_dependency(tid);
       if (!t2.empty())
          {
-            // The transaction at pos->first (T2) has an rw dependency on
+            // The transaction at t2 (T2) has an rw dependency on
             // tid (T3). Now check to see if T2 is an rw dependency of
             // some other transaction (T1).
             auto t1 = get_rw_dependency(t2);
             if (!t1.empty())
                {
-                  // A dangerous structure has been located.
-                  return std::make_tuple(t2, true);
+                  // A dangerous structure has been located. Determine which
+                  // transaction to terminate.
+
+                  if (active_transactions.find(t2) != active_transactions.end())
+                     {
+                        return std::make_tuple(t2, true);
+                     }
+
+                  if (active_transactions.find(t1) != active_transactions.end())
+                     {
+                        return std::make_tuple(t1, true);
+                     }
+
+                  return std::make_tuple(tid, true);
                }
          }
 

@@ -204,7 +204,7 @@ TEST(SsiLockManagerTest, CanCollectAllTransactions)
    lm.abort(tid2);
    // Simulate committing the remaining transactions.
    lm.commit(tid3);
-   lm.commit(tid2);
+   lm.commit(tid1);
 
    ASSERT_EQ(0, lm.writer_graph_size());
 }

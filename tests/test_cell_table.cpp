@@ -335,6 +335,7 @@ TEST(TableTest, CanDisableIsolation)
 TEST(TableTest, CanSerializeTransactions)
 {
    using namespace lattice::cell;
+   using namespace std::rel_ops;
 
    table t
       {
@@ -353,14 +354,15 @@ TEST(TableTest, CanSerializeTransactions)
    t.set_ssi_lock_manager(&lm);
 
    transaction_id tid_generator;
-   transaction_id tid1 = tid_generator.next();
-   transaction_id tid2 = tid_generator.next();
-   transaction_id tid3 = tid_generator.next();
 
    std::vector<row_id> rows;
 
    for (auto i = 0; i < 10000; ++i)
       {
+         transaction_id tid1 = tid_generator.next();
+         transaction_id tid2 = tid_generator.next();
+         transaction_id tid3 = tid_generator.next();
+
          row_id rid;
          table::text_tuple_type text_data
             {
@@ -393,6 +395,9 @@ TEST(TableTest, CanSerializeTransactions)
       {
          std::stringstream b1;
          std::stringstream b2;
+
+         transaction_id tid2 = tid_generator.next();
+         transaction_id tid3 = tid_generator.next();
 
          t.fetch_row(tid2, rows[i],
             {
@@ -433,29 +438,29 @@ TEST(TableTest, CanSerializeTransactions)
          // T2 COMMIT
 
          row_id new_rid;
-         t.update_row(tid2, rows[i],
-            {
-            true
-            }, b1.str(), new_rid, isolation_level::SERIALIZABLE);
+         ASSERT_EQ(table::update_code::SUCCESS,
+               t.update_row(tid2, rows[i], { true }, b1.str(), new_rid, isolation_level::SERIALIZABLE));
 
          // Before the commit we make sure that we have no conflicts.
          auto results = lm.check_for_conflicts(tid2);
          ASSERT_FALSE(std::get<1>(results));
 
+         t.commit_row(tid2, rows[i]);
          t.commit_row(tid2, new_rid);
          lm.commit(tid2);
 
          // T3 COMMIT
 
-         t.update_row(tid3, rows[i],
-            {
-            true
-            }, b2.str(), new_rid, isolation_level::SERIALIZABLE);
+         ASSERT_EQ(table::update_code::SUCCESS,
+               t.update_row(tid3, rows[i], { true }, b2.str(), new_rid, isolation_level::SERIALIZABLE));
 
          // Before the commit we make sure that we have no conflicts.
          results = lm.check_for_conflicts(tid3);
          ASSERT_TRUE(std::get<1>(results));
-         ASSERT_EQ(tid3, std::get<0>(results));
+         ASSERT_FALSE(tid2 == std::get<0>(results));
+
+         // Backout the transaction.
+         lm.abort(std::get<0>(results));
 
       }
 

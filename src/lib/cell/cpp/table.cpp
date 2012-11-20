@@ -19,6 +19,7 @@ static inline bool row_is_visible(const transaction_id& tid,
       break;
 
       case isolation_level::REPEATABLE_READ:
+      case isolation_level::SERIALIZABLE:
          if (!row.is_snapshot_visible(tid))
             {
                return false;
@@ -159,6 +160,7 @@ table::update_code table::update_row(const transaction_id& tid,
       const std::string& buffer, row_id& new_rid, isolation_level level)
 {
    // Get a reference to the row.
+   auto& old_rid = pos->first;
    auto& old_row = pos->second;
 
    if (!row_is_visible(tid, old_row, level))
@@ -173,8 +175,8 @@ table::update_code table::update_row(const transaction_id& tid,
          return update_code::CONFLICT;
       }
 
-   row_id rid;
-   switch (insert_row(tid, rid, present, buffer))
+   //row_id rid;
+   switch (insert_row(tid, new_rid, present, buffer))
       {
       default:
          return update_code::UNEXPECTED_INSERT_ERROR;
@@ -193,7 +195,7 @@ table::update_code table::update_row(const transaction_id& tid,
       }
 
    // Find the row that was just inserted.
-   pos = rows.find(rid);
+   pos = rows.find(new_rid);
    auto& new_row = pos->second;
 
    // Update it so that it has copies of all the
@@ -206,7 +208,7 @@ table::update_code table::update_row(const transaction_id& tid,
    // Track a write on the old row, in case anyone has read it.
    if (level==isolation_level::SERIALIZABLE && ssi_lm!=nullptr)
          {
-            ssi_lm->track_write(tid, table_id, pos->first);
+            ssi_lm->track_write(tid, table_id, old_rid);
          }
 
    return update_code::SUCCESS;
