@@ -73,7 +73,8 @@ public:
     * @returns: A new transaction id. This transaction id is local to the
     * cell, and needs to be used when corresponding with this cell.
     */
-   page::object_id_type create_transaction();
+   page::object_id_type create_transaction(isolation_level level =
+         isolation_level::READ_COMMITTED);
 
    /**
     * Creates a new cursor.

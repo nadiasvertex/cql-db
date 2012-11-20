@@ -7,11 +7,13 @@
 namespace lattice {
 namespace cell {
 
-page::object_id_type command_processor::create_transaction()
+page::object_id_type command_processor::create_transaction(
+      isolation_level level)
 {
    auto txn_id = ++next_transaction_id;
-   transactions.insert(std::make_pair(txn_id, transaction()));
+   auto results = transactions.insert(std::make_pair(txn_id, transaction()));
 
+   results.first->second.set_isolation_level(level);
    return txn_id;
 }
 
@@ -179,7 +181,33 @@ CommandResponse command_processor::prepare(const CommandRequest& request,
    page::object_id_type txn_id;
    if (msg.has_create_transaction() && msg.create_transaction())
       {
-         txn_id = create_transaction();
+         isolation_level level;
+         if (!msg.has_isolation_level())
+            {
+               level = isolation_level::READ_COMMITTED;
+            }
+         else
+            {
+               switch (msg.isolation_level())
+                  {
+                  default:
+                     level = isolation_level::READ_COMMITTED;
+                  break;
+
+                  case CommandRequest::Prepare::READ_UNCOMMITTED:
+                     level = isolation_level::READ_UNCOMMITTED;
+                  break;
+
+                  case CommandRequest::Prepare::REPEATABLE_READ:
+                     level = isolation_level::REPEATABLE_READ;
+                  break;
+
+                  case CommandRequest::Prepare::SERIALIZABLE:
+                     level = isolation_level::SERIALIZABLE;
+                  break;
+                  }
+            }
+         txn_id = create_transaction(level);
          prepare_response->set_transaction_id(txn_id);
       }
    else

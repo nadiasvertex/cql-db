@@ -13,10 +13,18 @@ message CommandRequest {
    // create a transaction, and it may create one
    // or more cursors.   
    message Prepare {
-      optional bool create_transaction = 1;
-      repeated string cursors          = 2;
-      optional uint64 transaction_id   = 3; // If not creating a new transaction
-                                            // but creating more cursors.         
+      enum Isolation {
+         READ_UNCOMMITTED = 0;
+         READ_COMMITTED   = 1; // This is the default
+         REPEATABLE_READ  = 2;
+         SERIALIZABLE     = 3;
+      }
+   
+      optional bool create_transaction   = 1;
+      optional Isolation isolation_level = 2;
+      repeated string cursors            = 3;
+      optional uint64 transaction_id     = 4; // If not creating a new transaction
+                                              // but creating more cursors.         
    }
    
    // If this is a FETCH message, then it 
