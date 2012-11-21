@@ -1,0 +1,95 @@
+package lattice.edge;
+
+message ClientRequest {
+   enum Kind {
+      AUTHENTICATE = 1;
+      QUERY        = 2;
+      NEXT_BATCH   = 3;
+   }
+   
+   // Authentication data.
+   message Authenticate {
+      required string user_name = 1;
+      required string password  = 2;
+   }
+   
+   // Contains a query and optional
+   // query parameters.
+   message Query {
+      required string data       = 1;
+      optional uint32 batch_size = 2;
+   }
+      
+   // The request id for identifying the chain
+   // of messages belonging to some operation.   
+   // For authentication, request_id must be
+   // set to 0.
+   required uint64 request_id         = 1;
+   
+   // Indicates what kind of message is present.
+   required Kind   kind               = 2;
+   
+   // Used to ensure that the user has authenticated.
+   // This field is optional, but if it's not present,
+   // the command may be rejected with an 'AUTHENTICATE_ERROR'.
+   optional bytes  auth_token         = 3;
+      
+   // If present, contains the query data to be processed. The
+   // request_id in must be 0. The response will provide the
+   // new request_id. All further communication about this query
+   // must involve the request id provided.
+   optional Query query               = 5;
+   
+   // If present, contains authentication information.
+   optional Authenticate authenticate = 16;
+}
+
+message ClientResponse {
+   enum Kind {
+      AUTHENTICATE_SUCCESS = 1;
+      AUTHENTICATE_ERROR   = 2;
+      QUERY_BATCH          = 3; // A batch of results from a query.
+      QUERY_FAIL           = 4; // An error indicating that the query has
+                                // failed.      
+   }
+   
+   // Contains the authentication token.
+   message Authenticate {
+      required bytes auth_token = 1;
+   }
+   
+   // A query batch
+   message Batch {
+      message Row {
+         repeated bytes column = 1;
+      }   
+      repeated Row row         = 1;
+   }   
+   
+   message QueryError {
+      enum Code {
+         PARSE_FAIL        = 1; // Failed to parse the query.
+         TRANSACTION_ABORT = 2; // Transaction aborted.         
+      }
+      
+      required Code   code    = 1;// The error code.
+      optional string message = 2;// The error message, if any.
+   }
+   
+   // For authentication responses, the
+   // request_id will be set to 0.
+   required uint64 request_id = 1;
+   
+   // The kind of response provided.
+   required Kind   kind       = 2;
+   
+   // If the query has failed, this will
+   // be present and indicates why.
+   optional QueryError error  = 3;
+   
+   // A batch contains a set of records.
+   optional Batch batch       = 4;
+   
+   // If present, provides authentication information.
+   optional Authenticate authenticate = 16;
+}

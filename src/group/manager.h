@@ -8,6 +8,7 @@
 #ifndef __LATTICE_GROUP_CELL_MANAGER_H__
 #define __LATTICE_GROUP_CELL_MANAGER_H__
 
+#include <cstdint>
 #include <thread>
 #include <vector>
 #include <zmq.hpp>
@@ -17,7 +18,7 @@
 namespace lattice {
 namespace group {
 
-class cell_manager
+class manager
 {
    zmq::context_t &ctx;
    std::vector<cell::command_processor*> processors;
@@ -29,13 +30,17 @@ private:
    /** Issues the 'stop' command when sig_term is called. */
    static void sig_term_handler(int ignored);
 
+   /** Handles spawning new threads to deal with query execution
+    * requests. */
+   void query_processor_thread();
+
 public:
-   cell_manager(zmq::context_t &_ctx) :
+   manager(zmq::context_t &_ctx) :
          ctx(_ctx), continue_processing(true)
    {
    }
 
-   ~cell_manager();
+   ~manager();
 
    /**
     * Starts the cell manager.

@@ -3,7 +3,8 @@
 #include <mutex>
 
 #include <edge/proto/packet.pb.h>
-#include "cell_manager.h"
+#include <processor/cpp/query.h>
+#include "manager.h"
 
 namespace lattice {
 namespace group {
@@ -12,9 +13,9 @@ namespace group {
 static std::mutex stop_guard;
 
 /** The one and only cell_manager. */
-static cell_manager* _manager = nullptr;
+static manager* _manager = nullptr;
 
-void cell_manager::sig_term_handler(int ignored)
+void manager::sig_term_handler(int ignored)
 {
    if (_manager != nullptr)
       {
@@ -22,12 +23,13 @@ void cell_manager::sig_term_handler(int ignored)
       }
 }
 
-void cell_manager::start()
+void manager::start()
 {
    _manager = this;
 
-   signal((int) SIGINT, cell_manager::sig_term_handler);
+   signal((int) SIGINT, manager::sig_term_handler);
 
+   // Start the cell processors.
    for (auto i = 0; i < std::thread::hardware_concurrency(); ++i)
       {
          auto* processor = new cell::command_processor();
@@ -58,9 +60,14 @@ void cell_manager::start()
                         }
                   }));
       }
+
+   threads.push_back(new std::thread([&]
+      {
+         query_processor_thread();
+      }));
 }
 
-void cell_manager::stop()
+void manager::stop()
 {
    std::lock_guard<std::mutex> lock(stop_guard);
 
@@ -94,7 +101,7 @@ void cell_manager::stop()
       }
 }
 
-void cell_manager::process()
+void manager::process()
 {
    std::chrono::milliseconds dur(1000);
 
@@ -104,7 +111,7 @@ void cell_manager::process()
       }
 }
 
-cell_manager::~cell_manager()
+manager::~manager()
 {
    if (continue_processing)
       {

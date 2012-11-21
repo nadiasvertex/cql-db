@@ -6,7 +6,7 @@
  */
 
 #include <plane/cpp/control.h>
-#include "cell_manager.h"
+#include "manager.h"
 
 /**
  * Ensures that the control plane is shutdown on exit.
@@ -31,7 +31,7 @@ int main(int argc, char*argv[]) {
     control_guard cg(ctx);
 
     // Setup the cell manager
-    lattice::group::cell_manager cm(ctx);
+    lattice::group::manager cm(ctx);
 
     // Start the cell manager
     cm.start();
