@@ -90,7 +90,7 @@ void manager::stop()
    auto* src = packet.mutable_src();
    src->set_lattice(0);
    src->set_group(0);
-   src->set_cell(0);
+   src->set_unit(0);
 
    auto out = packet.SerializeAsString();
    request.send(out.c_str(), out.size());

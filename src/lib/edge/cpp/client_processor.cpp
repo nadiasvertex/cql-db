@@ -26,6 +26,8 @@ ClientResponse client_processor::query(const ClientRequest& request)
    auto qp = new processor::query(md, q.data());
 
    requests.insert(std::make_pair(id, query_handle_type(qp)));
+
+   //auto row = qp->fetch_one();
 }
 
 ClientResponse client_processor::process(const ClientRequest& request)

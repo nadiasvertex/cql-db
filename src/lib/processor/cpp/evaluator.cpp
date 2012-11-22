@@ -10,7 +10,7 @@ namespace processor {
 #include <processor/cpp/evaluator_row_fetch.h>
 
 select_expr_evaluator::select_expr_evaluator(metadata& _md,
-		jit_context& context, actions::node_handle_type _se, select_fields_handle _fields) :
+		jit_context& context, actions::node_handle_type _se, select_fields& _fields) :
 		md(_md), jit_function(context), se(_se), fields(_fields)
 {
 	create();
@@ -143,7 +143,7 @@ auto select_expr_evaluator::eval_leaf(actions::node_handle_type node) -> value_t
 					}
 
 				auto index = cr->get_index();
-				auto& type = fields->column_types[index];
+				auto& type = fields.column_types[index];
 
 				auto jv_index = new_constant(index, jit_type_sys_int);
 				auto jv_row_buffer = get_param(0);

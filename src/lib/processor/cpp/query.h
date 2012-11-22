@@ -8,8 +8,7 @@
 
 #include <processor/cpp/metadata.h>
 #include <processor/cpp/evaluator.h>
-#include <processor/cpp/row_buffer.h>
-
+#include <processor/cpp/query_analyzer.h>
 
 #include <jit/jit-plus.h>
 
@@ -29,6 +28,9 @@ public:
 	typedef std::vector<std::string> tuple_type;
 
 private:
+	/**
+	 * Reference to the metadata.
+	 */
 	metadata& md;
 
 	/**
@@ -44,6 +46,12 @@ private:
 	select_evaluator_list_type select_exprs;
 
 	/**
+	 * The query analyzer performs syntax checking, type inference,
+	 * and other planning actions.
+	 */
+	query_analyzer* qa;
+
+	/**
 	 * Solves the query once.
 	 *
 	 * @returns: A tuple containing the output, if any.
@@ -53,13 +61,20 @@ private:
 public:
 	query(metadata& _md, const std::string& query_data);
 
+	~query();
+
+
+	/**
+	 * Fetches a single row.
+	 *
+	 * @param rb: The row buffer to use.
+	 *
+	 * @returns: A tuple of stringified results.
+	 */
 	tuple_type fetch_one(row_buffer& rb)
 	{
 		return solve_once(rb);
 	}
-
-
-
 };
 
 } // namespace processor

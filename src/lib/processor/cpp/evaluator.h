@@ -19,11 +19,11 @@ public:
 private:
 	metadata& md;
 	actions::node_handle_type se;
-	select_fields_handle fields;
+	select_fields& fields;
 
 public:
 	select_expr_evaluator(metadata& _md, jit_context& context,
-			actions::node_handle_type _se, select_fields_handle _fields);
+			actions::node_handle_type _se, select_fields& _fields);
 	/**
 	 * Build the code to evaluate this select expression.
 	 */

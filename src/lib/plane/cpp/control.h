@@ -40,43 +40,14 @@ class control
      *
      * Initializes and binds to all sockets.
      */
-    control(zmq::context_t &ctx, int port) :
-            publisher(ctx, ZMQ_PUB),
-            response(ctx, ZMQ_REP)
-    {
-
-        std::string pgm_address = std::string("epgm://*:")
-                + std::to_string(port);
-
-        // Broadcast to the inproc control channel and on IPC if
-        // anyone is listening.
-        publisher.bind("inproc://control");
-        publisher.bind("ipc://lattice-control-plane");
-
-        // Listen for requests to broadcast locally.
-        response.bind("inproc://control-post");
-
-        // Spawn a thread to proxy messages from the post
-        // channel to the broadcast channel.
-        fwd_thread = std::unique_ptr<std::thread>(
-                new std::thread([&]{
-                    zmq_proxy(response, publisher, nullptr);
-                })
-        );
-
-    }
+    control(zmq::context_t &ctx, int port);
 
     /** Shutdown the control plane.
      *
      * Close all control plane bindings. After this call
      * you can no longer send messages using the control plane.
      */
-    void _shutdown()
-    {
-        publisher.close();
-        response.close();
-        fwd_thread->join();
-    }
+    void _shutdown();
 
 public:
     ~control() {
@@ -87,14 +58,7 @@ public:
      *
      * @param packet: The packet to broadcast on the control plane.
      */
-    void send(const lattice::edge::Packet& packet)
-    {
-        std::ostringstream out;
-        packet.SerializeToOstream(&out);
-
-        auto data = out.str();
-        publisher.send(data.c_str(), data.size());
-    }
+    void send(const lattice::edge::Packet& packet);
 
     /** Initialize the control plane.
      *

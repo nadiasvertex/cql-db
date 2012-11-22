@@ -43,8 +43,8 @@ TEST(ControlPlaneTest, CanBroadcast) {
   lattice::edge::Packet p1;
 
   p1.Clear();
-  p1.mutable_src()->set_cell(0);
-  p1.add_dst()->set_cell(1);
+  p1.mutable_src()->set_unit(0);
+  p1.add_dst()->set_unit(1);
 
   control_guard cg(ctx);
 

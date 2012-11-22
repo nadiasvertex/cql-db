@@ -2,6 +2,12 @@
 BINDIR=$PWD/tools
 mkdir -p $BINDIR
 
+# Build APR
+cd apr-1.4.6
+./configure --prefix=$BINDIR --disable-shared --enable-static
+make && make install
+cd..
+
 # Build protobuf
 cd protobuf-2.4.1
 ./configure --prefix=$BINDIR
