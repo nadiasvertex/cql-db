@@ -5,40 +5,66 @@
  *      Author: Christopher Nelson
  */
 
+#include <log4cxx/logger.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/helpers/exception.h>
+
 #include <plane/cpp/control.h>
 #include "manager.h"
+
+using namespace log4cxx;
+using namespace log4cxx::helpers;
+
+LoggerPtr logger(Logger::getLogger("cql-group"));
 
 /**
  * Ensures that the control plane is shutdown on exit.
  */
-class control_guard {
+class control_guard
+{
 public:
-    control_guard(zmq::context_t &ctx) {
-        lattice::plane::control::initialize(ctx);
-    }
+   control_guard(zmq::context_t &ctx)
+   {
+      lattice::plane::control::initialize(ctx);
+   }
 
-    ~control_guard() {
-        lattice::plane::control::shutdown();
-    }
+   ~control_guard()
+   {
+      lattice::plane::control::shutdown();
+   }
 };
 
-int main(int argc, char*argv[]) {
+int main(int argc, char*argv[])
+{
 
-    // Initialize 0mq.
-    zmq::context_t ctx(1);
+   // Initialize the logger.
+   BasicConfigurator::configure();
 
-    // Initialize control plane for local group.
-    control_guard cg(ctx);
+   LOG4CXX_DEBUG(logger, "initializing network transport");
 
-    // Setup the cell manager
-    lattice::group::manager cm(ctx);
+   // Initialize 0mq.
+   zmq::context_t ctx(1);
 
-    // Start the cell manager
-    cm.start();
+   LOG4CXX_DEBUG(logger, "initializing control plane");
 
-    // Process requests
-    cm.process();
+   // Initialize control plane for local group.
+   control_guard cg(ctx);
+
+   LOG4CXX_DEBUG(logger, "initializing compute cell manager");
+
+   // Setup the cell manager
+   lattice::group::manager cm(ctx);
+
+   LOG4CXX_INFO(logger, "Starting compute cells");
+
+   // Start the cell manager
+   cm.start();
+
+   LOG4CXX_INFO(logger, "Entering process loop");
+
+   // Process requests
+   cm.process();
+
+   LOG4CXX_INFO(logger, "Shutdown");
 }
-
-
 

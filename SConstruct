@@ -8,7 +8,8 @@ path = ":".join([os.environ['PATH'],
                  "/store/workspace/build/Release+Asserts/bin",
                  os.path.join(toolchain_path, "bin")])
 
-libs = ['zmq', 'protobuf', 'jitplus', 'jit', 'pthread', 'rt']
+libs = ['log4cxx', 'aprutil-1', 'expat', 'apr-1', 'zmq', 
+        'protobuf', 'jitplus', 'jit', 'pthread', 'rt']
 
 env = Environment(
     ENV={

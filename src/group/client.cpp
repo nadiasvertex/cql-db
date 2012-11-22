@@ -6,7 +6,7 @@ namespace group {
 void manager::query_processor_thread()
 {
    zmq::socket_t response(ctx, ZMQ_REP);
-   response.bind("tcp://*:8");
+   response.bind("tcp://*:28000");
 
    while (continue_processing)
       {
@@ -20,9 +20,6 @@ void manager::query_processor_thread()
 
          // We never reply to messages out of order. 0MQ doesn't allow
          // it, and that simplifies our life.
-
-
-
 
       }
 }
