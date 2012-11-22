@@ -1,0 +1,8 @@
+package lattice.edge;
+
+message Discovery {   
+   required bytes  node    = 2;
+}
+
+
+
