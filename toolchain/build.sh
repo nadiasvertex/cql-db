@@ -8,6 +8,12 @@ cd apr-1.4.6
 make && make install
 cd..
 
+# Build log4cxx
+cd apache-log4cxx-0.10.0
+./configure --prefix=$BINDIR --disable-shared --enable-static --disable-doxygen --with-apr=$BINDIR
+make && make install
+cd..
+
 # Build protobuf
 cd protobuf-2.4.1
 ./configure --prefix=$BINDIR
