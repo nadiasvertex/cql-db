@@ -9,7 +9,7 @@
 #include <processor/cpp/metadata.h>
 #include <processor/cpp/evaluator.h>
 #include <processor/cpp/row_buffer.h>
-//#include <processor/cpp/query_analyzer.h>
+#include <processor/cpp/query_analyzer.h>
 
 #include <jit/jit-plus.h>
 
@@ -50,7 +50,7 @@ private:
 	 * The query analyzer performs syntax checking, type inference,
 	 * and other planning actions.
 	 */
-	//query_analyzer* qa;
+	query_analyzer* qa;
 
 	/**
 	 * Solves the query once.

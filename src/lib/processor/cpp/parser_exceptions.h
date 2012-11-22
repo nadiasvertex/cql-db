@@ -9,6 +9,7 @@
 #define __LATTICE_PROCESSOR_PARSER_EXCEPTIONS_H__
 
 #include <exception>
+#include <string>
 
 namespace lattice {
 namespace processor {

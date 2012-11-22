@@ -15,7 +15,7 @@
 using namespace log4cxx;
 using namespace log4cxx::helpers;
 
-LoggerPtr logger(Logger::getLogger("cql-group"));
+LoggerPtr logger(Logger::getLogger("cql.group"));
 
 /**
  * Ensures that the control plane is shutdown on exit.

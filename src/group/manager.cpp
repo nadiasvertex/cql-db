@@ -1,10 +1,16 @@
-#include <signal.h>
 #include <chrono>
 #include <mutex>
+
+#include <apr-1/apr_signal.h>
+#include <log4cxx/logger.h>
 
 #include <edge/proto/packet.pb.h>
 #include <processor/cpp/query.h>
 #include "manager.h"
+
+using namespace log4cxx;
+
+extern LoggerPtr logger;
 
 namespace lattice {
 namespace group {
@@ -17,6 +23,8 @@ static manager* _manager = nullptr;
 
 void manager::sig_term_handler(int ignored)
 {
+   LOG4CXX_DEBUG(logger, "interrupt or termination signal received");
+
    if (_manager != nullptr)
       {
          _manager->stop();
@@ -27,7 +35,12 @@ void manager::start()
 {
    _manager = this;
 
-   signal((int) SIGINT, manager::sig_term_handler);
+   LOG4CXX_DEBUG(logger, "cell manager started, using "
+                         << std::thread::hardware_concurrency()
+                         << " hardware threads.");
+
+   apr_signal((int) SIGINT, manager::sig_term_handler);
+   apr_signal((int) SIGTERM, manager::sig_term_handler);
 
    // Start the cell processors.
    for (auto i = 0; i < std::thread::hardware_concurrency(); ++i)
@@ -65,11 +78,17 @@ void manager::start()
       {
          query_processor_thread();
       }));
+
+   LOG4CXX_DEBUG(logger, "cell manager using "
+                            << threads.size()
+                            << " threads.");
 }
 
 void manager::stop()
 {
    std::lock_guard<std::mutex> lock(stop_guard);
+
+   LOG4CXX_DEBUG(logger, "cell manager stop requested.");
 
    if (continue_processing == false)
       {
@@ -92,23 +111,31 @@ void manager::stop()
    src->set_group(0);
    src->set_unit(0);
 
+   LOG4CXX_DEBUG(logger, "sending STOP command to compute cells");
    auto out = packet.SerializeAsString();
    request.send(out.c_str(), out.size());
 
    for (auto t : threads)
       {
+         LOG4CXX_DEBUG(logger, "joining thread " << t->get_id());
          t->join();
       }
+
+   LOG4CXX_DEBUG(logger, "cell manager stop completed.");
 }
 
 void manager::process()
 {
    std::chrono::milliseconds dur(1000);
 
+   LOG4CXX_DEBUG(logger, "enter cell manager process loop.");
+
    while (continue_processing)
       {
          std::this_thread::sleep_for(dur);
       }
+
+   LOG4CXX_DEBUG(logger, "exit cell manager process loop.");
 }
 
 manager::~manager()

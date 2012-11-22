@@ -1,4 +1,7 @@
+#include <log4cxx/logger.h>
 #include <edge/cpp/client_processor.h>
+
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("cql.edge"));
 
 namespace lattice {
 namespace edge {
@@ -6,6 +9,10 @@ namespace edge {
 ClientResponse client_processor::authenticate(const ClientRequest& request)
 {
    ClientResponse resp;
+
+   LOG4CXX_INFO(logger, "Authenticating user name: " << (request.has_authenticate()
+                                                         ? request.authenticate().user_name()
+                                                         : "<not provided>"));
 
    resp.set_kind(ClientResponse::AUTHENTICATE_SUCCESS);
 
