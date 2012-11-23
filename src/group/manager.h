@@ -13,6 +13,7 @@
 #include <vector>
 #include <zmq.hpp>
 
+#include <edge/cpp/discovery.h>
 #include <cell/cpp/command_processor.h>
 
 namespace lattice {
@@ -26,6 +27,8 @@ class manager
 
    bool continue_processing;
 
+   edge::discovery disc;
+
 private:
    /** Issues the 'stop' command when sig_term is called. */
    static void sig_term_handler(int ignored);
@@ -36,7 +39,7 @@ private:
 
 public:
    manager(zmq::context_t &_ctx) :
-         ctx(_ctx), continue_processing(true)
+         ctx(_ctx), continue_processing(true), disc(28001)
    {
    }
 

@@ -2,26 +2,31 @@
 #define __LATTICE_EDGE_DISCOVERY_H__
 
 #include <string>
-#include <apr-1/apr_network_io.h>
+#include <netinet/in.h>
 
+#include <zmq.hpp>
 
 namespace lattice {
 namespace edge {
 
 class discovery
 {
-	apr_socket_t* broadcast;
-	apr_sockaddr_t* broadcast_address;
-	apr_pool_t *pool;
+	int broadcast;
+   struct sockaddr_in si_this;
 
 	std::string broadcast_msg;
 
-	void handle_socket_error(apr_status_t status);
+	void handle_socket_error(const std::string& msg, int error);
 
 public:
    discovery(int port);
+   ~discovery();
 
+   /** Announce our presence to the cluster. */
    void announce();
+
+   /** Listen for other announcements. */
+   bool listen();
 
 };
 

@@ -35,9 +35,8 @@ void manager::start()
 {
    _manager = this;
 
-   LOG4CXX_DEBUG(logger, "cell manager started, using "
-                         << std::thread::hardware_concurrency()
-                         << " hardware threads.");
+   LOG4CXX_DEBUG(logger,
+         "cell manager started, using " << std::thread::hardware_concurrency() << " hardware threads.");
 
    apr_signal((int) SIGINT, manager::sig_term_handler);
    apr_signal((int) SIGTERM, manager::sig_term_handler);
@@ -79,9 +78,8 @@ void manager::start()
          query_processor_thread();
       }));
 
-   LOG4CXX_DEBUG(logger, "cell manager using "
-                            << threads.size()
-                            << " threads.");
+   LOG4CXX_DEBUG(logger,
+         "cell manager using " << threads.size() << " threads.");
 }
 
 void manager::stop()
@@ -132,6 +130,8 @@ void manager::process()
 
    while (continue_processing)
       {
+         disc.announce();
+         disc.listen();
          std::this_thread::sleep_for(dur);
       }
 

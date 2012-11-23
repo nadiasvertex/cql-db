@@ -58,7 +58,7 @@ int main(int argc, char*argv[])
    LOG4CXX_INFO(logger, "Starting compute cells");
 
    // Start the cell manager
-   cm.start();
+   //cm.start();
 
    LOG4CXX_INFO(logger, "Entering process loop");
 
