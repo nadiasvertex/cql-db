@@ -99,23 +99,31 @@ void discovery::announce()
 
 bool discovery::listen()
 {
+   // Extremely small timeout so that
+	// we don't waste time waiting for announcements.
 	struct timeval tv { 0, 1 };
 
    fd_set read_fds;
 	FD_ZERO(&read_fds);
 	FD_SET(broadcast, &read_fds);
 
+
+	while(true)
+		{
+	// Check to see if the socket is ready to read.
    if(select(broadcast+1, &read_fds, nullptr, nullptr, &tv)==-1)
 		{
 			handle_socket_error("polling broadcast socket", errno);
 			return false;
 		}
 
+	// See if the socket was selected.
    if (!FD_ISSET(broadcast, &read_fds))
 		{
 			return false;
 		}
 
+	// Read from the broadcast socket.
 	char buffer[1024];
 	struct sockaddr_in si_that;
 	socklen_t si_len;
@@ -129,11 +137,22 @@ bool discovery::listen()
 			return false;
 		}
 
+   // Try to parse a discovery message from the buffer.
 	Discovery msg;
 	if (!msg.ParseFromString(std::string(buffer, size)))
 		{
 			return false;
 		}
+
+   // Store the IP address and the last time
+   // we heard from the node. This is used
+	// to figure out how to route data requests
+   node_map.insert(
+      std::make_pair(
+         msg.node(), 
+         node_presence_type{si_that, std::chrono::steady_clock::now() }
+      )
+   );
 
    char addr_str[INET_ADDRSTRLEN];   
    LOG4CXX_INFO(logger,
@@ -143,6 +162,7 @@ bool discovery::listen()
                 << inet_ntop(AF_INET, &(si_that.sin_addr), addr_str, sizeof(addr_str))
                 << ":" << ntohs (si_that.sin_port) << ")"
    );
+		}
 
    return true;
 }
