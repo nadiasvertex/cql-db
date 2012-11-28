@@ -34,6 +34,11 @@ libraries = (
        "cd jitdynamic", "make", "make install", "cd ..",
        "mkdir -p {BINDIR}/include/jit/",
        "cp -fr include/jit/*.h {BINDIR}/include/jit/")),
+             
+  ("openssl-1.0.1c",
+      ("./config --prefix={BINDIR} no-shared ",
+       "make", "make install")),
+ 
  
   ("zmqcpp",
       ("cp -f zmq.hpp {BINDIR}/include")),
