@@ -80,6 +80,10 @@ parser.add_argument('--build', dest='build_one', action='append',
 parser.add_argument('--print', dest='print_cmd', action='store_true',
                    default=False,
                    help="print the commands, don't actually run them")
+parser.add_argument('--clean', dest='clean', action='store_false',
+                   default=False,
+                   help='if building only one dependency, clean up')
+
 
 args = parser.parse_args()
 
@@ -100,6 +104,9 @@ if args.build_one:
     d = dict(libraries)
     for lib in args.build_one:
         build(lib, d[lib])
+        
+    if args.clean:
+        os.system("hg clean -X toolchain/tools/*")        
     sys.exit(0)
         
 for path, cmds in libraries:
