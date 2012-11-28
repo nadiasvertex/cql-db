@@ -1,6 +1,7 @@
 #ifndef __LATTICE_EDGE_ROUTER_H__
 #define __LATTICE_EDGE_ROUTER_H__
 
+#include <string>
 #include <zmq.hpp>
 
 #include <edge/cpp/address.h>
@@ -30,6 +31,8 @@ class router
    address addr_gen;
 public:
    router(zmq::context_t &_ctx);
+
+	void connect_peer(std::string peer_ip, std::string node_id);
 
    bool join_cluster();
 

@@ -17,3 +17,6 @@ python/*
 .sconsign.dblite
 lattice_test
 #*#
+
+syntax: regexp
+^group$
