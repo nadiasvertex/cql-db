@@ -1,7 +1,9 @@
 #ifndef __LATTICE_COORDINATOR_CONSENSUS_H__
 #define __LATTICE_COORDINATOR_CONSENSUS_H__
 
-#include <queue>
+#include <cstdint>
+#include <unordered_map>
+#include <vector>
 #include <coordinator/proto/configuration.pb.h>
 
 namespace lattice {
@@ -22,24 +24,21 @@ class consensus
       int commit_count;
    } consensus_sequence_type;
 
-   typedef std::queue<consensus_sequence_type> consensus_queue_type;
+   typedef std::unordered_map<std::uint32_t, consensus_sequence_type> consensus_map_type;
+
+   /** Map of messages to sequence types received. */
+   consensus_map_type messages;
+
+   /** The log of sequence numbers received. */
+   std::vector<std::uint32_t> log;
 
 public:
    consensus();
 
+   void process(Configuration& msg);
+
+
 };
-
-bool operator<(const consensus::consensus_sequence_type& l,
-      const consensus::consensus_sequence_type& r)
-{
-   return l.pre_prepare.sequence() < r.pre_prepare.sequence();
-}
-
-bool operator==(const consensus::consensus_sequence_type& l,
-      const consensus::consensus_sequence_type& r)
-{
-   return l.pre_prepare.sequence() == r.pre_prepare.sequence();
-}
 
 }
 }
